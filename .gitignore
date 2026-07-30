@@ -1,0 +1,10 @@
+# Ignore secret configurations
+secret.json
+
+# Ignore virtual environments
+env/
+venv/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
