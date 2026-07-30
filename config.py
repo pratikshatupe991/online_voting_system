@@ -20,5 +20,5 @@ class Config:
     SECRET_KEY = secrets.get('SECRET_KEY') or os.environ.get('SECRET_KEY') or 'super-secret-key-change-this'
     SQLALCHEMY_DATABASE_URI = (secrets.get('DATABASE_URL') or os.environ.get('DATABASE_URL') or
                                (f'mysql+pymysql://{secrets["MYSQL_USERNAME"]}:{secrets["MYSQL_PASSWORD"]}@localhost/'
-                                f'voting_db'))
+                                f'{secrets["MYSQL_DATABASE"]}'))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
