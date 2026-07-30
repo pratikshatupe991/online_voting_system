@@ -1,0 +1,14 @@
+# install reqirements.txt
+pip install -r requirements.txt
+
+# init database
+flask db init
+
+# migration
+flask db migrate
+
+# upgrade
+flask db upgrade
+
+# downgrade  (don't use unless you need it)
+flask db downgrade

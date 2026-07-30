@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .hero-section {
+        text-align: center;
+        padding: 60px 20px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        margin-top: 40px;
+    }
+    .hero-section h1 {
+        color: #2c3e50;
+        font-size: 36px;
+        margin-bottom: 15px;
+    }
+    .hero-section p {
+        font-size: 18px;
+        color: #555;
+        max-width: 600px;
+        margin: 0 auto 40px auto;
+        line-height: 1.6;
+    }
+    .card-container {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        flex-wrap: wrap;
+    }
+    .portal-card {
+        background-color: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 30px;
+        width: 280px;
+        text-align: center;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .portal-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    .portal-card h3 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    .portal-card p {
+        font-size: 14px;
+        color: #777;
+        margin-bottom: 25px;
+    }
+    .btn-portal {
+        display: inline-block;
+        text-decoration: none;
+        padding: 10px 25px;
+        color: white;
+        border-radius: 4px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+    }
+    .btn-admin {
+        background-color: #e74c3c;
+    }
+    .btn-admin:hover {
+        background-color: #c0392b;
+    }
+    .btn-voter {
+        background-color: #3498db;
+    }
+    .btn-voter:hover {
+        background-color: #2980b9;
+    }
+</style>
+
+<div class="hero-section">
+    <h1>Secure Digital Elections</h1>
+    <p>
+        Welcome to the Online Voting System. Our platform ensures transparent, 
+        accurate, and efficient elections with secure authentication and real-time result generation.
+    </p>
+
+    <div class="card-container">
+        <!-- Voter Portal Card -->
+        <div class="portal-card">
+            <h3>Voter Portal</h3>
+            <p>Verify your identity using OTP and cast your vote securely.</p>
+            <a href="#" class="btn-portal btn-voter">Access Voter Portal</a>
+        </div>
+
+        <!-- Admin Portal Card -->
+        <div class="portal-card">
+            <h3>Admin Portal</h3>
+            <p>Manage elections, candidates, and oversee the voting process.</p>
+            <a href="{{ url_for('admin.admin_signup_page') }}" class="btn-portal btn-admin">Admin Registration</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
