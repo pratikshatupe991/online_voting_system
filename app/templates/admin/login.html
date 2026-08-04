@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .form-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 50px;
+    }
+    .form-card {
+        background-color: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 400px;
+    }
+    .form-card h3 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 25px;
+        font-size: 24px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: bold;
+    }
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 14px;
+    }
+    .form-group input:focus {
+        border-color: #3498db;
+        outline: none;
+    }
+    .submit-btn {
+        width: 100%;
+        background-color: #3498db;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .submit-btn:hover {
+        background-color: #2980b9;
+    }
+    .error-message {
+        color: #e74c3c;
+        font-size: 14px;
+        text-align: center;
+        margin-bottom: 15px;
+        display: none;
+    }
+    .signup-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+    }
+    .signup-link a {
+        color: #3498db;
+        text-decoration: none;
+    }
+    .signup-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="form-wrapper">
+    <div class="form-card">
+        <h3>Admin Login</h3>
+        <div id="errorMessage" class="error-message"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required placeholder="Enter your email">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Enter your password">
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submitBtn">Sign In</button>
+        </form>
+        
+        <div class="signup-link">
+            Don't have an account? <a href="/admin/ui/signup">Register here</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); // Prevent default form submission
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorMessage = document.getElementById('errorMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // Reset UI
+        errorMessage.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Logging in...';
+
+        try {
+            const response = await fetch('/admin/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email: email, password: password })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                // Save the JWT token into sessionStorage
+                sessionStorage.setItem('login_token', result.data.token);
+                
+                // Optional: Save username or admin_id if you want to display it on the dashboard
+                sessionStorage.setItem('admin_username', result.data.username);
+                
+                // Redirect to the dashboard
+                window.location.href = '/admin/ui/dashboard';
+            } else {
+                // Show error message returned from the backend
+                errorMessage.innerText = result.message || 'Login failed. Please try again.';
+                errorMessage.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Sign In';
+            }
+        } catch (error) {
+            console.error('Error during login:', error);
+            errorMessage.innerText = 'Network error. Please try again later.';
+            errorMessage.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Sign In';
+        }
+    });
+</script>
+{% endblock %}
