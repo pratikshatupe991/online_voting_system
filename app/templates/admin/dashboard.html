@@ -8,7 +8,6 @@
         margin: 0 auto;
     }
     
-    /* Header Section */
     .dashboard-header {
         display: flex;
         justify-content: space-between;
@@ -23,19 +22,14 @@
         background-color: #3498db;
         color: white;
         padding: 10px 20px;
-        text-decoration: none;
         border: none;
         border-radius: 4px;
         font-size: 16px;
         font-weight: bold;
         cursor: pointer;
-        transition: background-color 0.3s;
     }
-    .btn-primary:hover {
-        background-color: #2980b9;
-    }
+    .btn-primary:hover { background-color: #2980b9; }
 
-    /* Filter Section */
     .filter-section {
         background-color: white;
         padding: 20px;
@@ -63,10 +57,6 @@
         font-size: 14px;
         min-width: 200px;
     }
-    .filter-group input:focus {
-        border-color: #3498db;
-        outline: none;
-    }
     .btn-secondary {
         background-color: #ecf0f1;
         color: #2c3e50;
@@ -75,13 +65,10 @@
         border-radius: 4px;
         cursor: pointer;
         font-weight: bold;
-        margin-top: 19px; /* Aligns with inputs */
+        margin-top: 19px;
     }
-    .btn-secondary:hover {
-        background-color: #e0e6ed;
-    }
+    .btn-secondary:hover { background-color: #e0e6ed; }
 
-    /* Table Section */
     .table-container {
         background-color: white;
         border-radius: 8px;
@@ -96,26 +83,83 @@
         padding: 15px;
         text-align: left;
         border-bottom: 1px solid #eee;
+        vertical-align: middle;
     }
     th {
         background-color: #f8f9fa;
         color: #2c3e50;
         font-weight: bold;
     }
-    tr:hover {
-        background-color: #f1f4f6;
-    }
+    tr:hover { background-color: #f1f4f6; }
     .empty-state {
         text-align: center;
         padding: 40px;
         color: #777;
+    }
+
+    .voter-img {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid #ccc;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 25px;
+        border-radius: 8px;
+        width: 400px;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .modal-header h3 { margin: 0; color: #2c3e50; }
+    .close-btn {
+        color: #777;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .close-btn:hover { color: #2c3e50; }
+    .form-group-modal {
+        margin-bottom: 15px;
+        display: flex;
+        flex-direction: column;
+    }
+    .form-group-modal label {
+        font-size: 12px;
+        font-weight: bold;
+        color: #555;
+        margin-bottom: 5px;
+    }
+    .form-group-modal input {
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .modal-submit {
+        width: 100%;
+        margin-top: 10px;
     }
 </style>
 
 <div class="dashboard-container">
     <div class="dashboard-header">
         <h2>Admin Dashboard</h2>
-        <!-- Button to trigger Add Voter Modal or navigate to an Add Voter page -->
         <button class="btn-primary" onclick="openAddVoterModal()">+ Add New Voter</button>
     </div>
 
@@ -136,110 +180,117 @@
         <table>
             <thead>
                 <tr>
+                    <th>Image</th>
                     <th>PRN ID</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Status</th>
-                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="voterTableBody">
-                <!-- Rows will be populated dynamically via JavaScript -->
                 <tr>
-                    <td colspan="5" class="empty-state">Loading voters...</td>
+                    <td colspan="4" class="empty-state">Loading voters...</td>
                 </tr>
             </tbody>
         </table>
     </div>
 </div>
 
-<script>
-    // 1. Check Authorization Immediately
-    const token = sessionStorage.getItem('login_token');
-    if (!token) {
-        // If no token exists, boot them back to the login page
-        window.location.href = '/admin/login';
-    }
+<!-- Add Voter Modal -->
+<div id="addVoterModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Voter</h3>
+            <span class="close-btn" onclick="closeAddVoterModal()">&times;</span>
+        </div>
+        <form id="addVoterForm" onsubmit="submitAddVoter(event)">
+            <div class="form-group-modal">
+                <label for="voterPrn">PRN</label>
+                <input type="text" id="voterPrn" name="prn" required>
+            </div>
+            <div class="form-group-modal">
+                <label for="voterName">Full Name</label>
+                <input type="text" id="voterName" name="name" required>
+            </div>
+            <div class="form-group-modal">
+                <label for="voterEmail">Email Address</label>
+                <input type="email" id="voterEmail" name="email" required>
+            </div>
+            <div class="form-group-modal">
+                <label for="voterImg">Profile Image (JPG, PNG)</label>
+                <input type="file" id="voterImg" name="profile_img" accept=".jpg, .jpeg, .png" required>
+            </div>
+            <button type="submit" class="btn-primary modal-submit">Register Voter</button>
+        </form>
+    </div>
+</div>
 
-    // Global variable to hold voter data so we can filter it locally
+<script>
+    const token = sessionStorage.getItem('login_token');
+    if (!token) window.location.href = '/admin/login';
+
     let allVoters = [];
 
-    // 2. Fetch Voters from Backend
     async function fetchVoters() {
         try {
-            // Replace with your actual API endpoint once built
-            const response = await fetch('/admin/api/voters', {
+            const response = await fetch('/admin/api/get_voters', {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`, // Pass the JWT here!
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'token': token }
             });
 
             if (response.status === 401) {
-                // Token expired or invalid
                 sessionStorage.removeItem('login_token');
                 window.location.href = '/admin/login';
                 return;
             }
 
             const result = await response.json();
-            
+
             if (response.ok && result.status === 'success') {
-                allVoters = result.data; // Store locally for fast filtering
+                allVoters = result.data;
                 renderTable(allVoters);
             } else {
-                document.getElementById('voterTableBody').innerHTML = 
-                    `<tr><td colspan="5" class="empty-state">Failed to load data: ${result.message}</td></tr>`;
+                document.getElementById('voterTableBody').innerHTML =
+                    `<tr><td colspan="4" class="empty-state">Failed to load data: ${result.message}</td></tr>`;
             }
         } catch (error) {
             console.error('Error fetching voters:', error);
-            // Mock data for display purposes until API is ready
-            allVoters = [
-                { prn: 'PRN1001', name: 'Rutuja', email: 'rutuja@example.com', status: 'Registered' },
-                { prn: 'PRN1002', name: 'John Doe', email: 'john@example.com', status: 'Voted' }
-            ];
-            renderTable(allVoters);
+            document.getElementById('voterTableBody').innerHTML =
+                `<tr><td colspan="4" class="empty-state">Error fetching data.</td></tr>`;
         }
     }
 
-    // 3. Render Table Data
     function renderTable(voterArray) {
         const tbody = document.getElementById('voterTableBody');
-        tbody.innerHTML = ''; // Clear existing rows
+        tbody.innerHTML = '';
 
         if (voterArray.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No voters found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No voters found.</td></tr>';
             return;
         }
 
         voterArray.forEach(voter => {
             const row = document.createElement('tr');
+            // Use API image if it exists, otherwise use a generic placeholder
+            const imgSrc = voter.image_path ? voter.image_path : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(voter.name) + '&background=random';
+
             row.innerHTML = `
+                <td><img src="${imgSrc}" class="voter-img" alt="${voter.name}"></td>
                 <td>${voter.prn}</td>
                 <td>${voter.name}</td>
                 <td>${voter.email}</td>
-                <td>${voter.status}</td>
-                <td>
-                    <button style="color: #3498db; background: none; border: none; cursor: pointer; text-decoration: underline;">Edit</button>
-                    <button style="color: #e74c3c; background: none; border: none; cursor: pointer; text-decoration: underline; margin-left: 10px;">Delete</button>
-                </td>
             `;
             tbody.appendChild(row);
         });
     }
 
-    // 4. Filtering Logic
     function applyFilters() {
         const filterPRN = document.getElementById('filterPRN').value.toLowerCase();
         const filterName = document.getElementById('filterName').value.toLowerCase();
 
         const filteredData = allVoters.filter(voter => {
-            const matchPRN = voter.prn.toLowerCase().includes(filterPRN);
-            const matchName = voter.name.toLowerCase().includes(filterName);
-            return matchPRN && matchName;
+            return voter.prn.toLowerCase().includes(filterPRN) &&
+                   voter.name.toLowerCase().includes(filterName);
         });
-
         renderTable(filteredData);
     }
 
@@ -249,13 +300,41 @@
         renderTable(allVoters);
     }
 
-    // 5. Add Voter Action
-    function openAddVoterModal() {
-        // You can redirect to an add-voter page or open a modal here
-        alert('Add New Voter clicked. We will build this API and modal next!');
+    // Modal Logic
+    const modal = document.getElementById('addVoterModal');
+    function openAddVoterModal() { modal.style.display = 'block'; }
+    function closeAddVoterModal() {
+        modal.style.display = 'none';
+        document.getElementById('addVoterForm').reset();
+    }
+    window.onclick = function(event) { if (event.target == modal) closeAddVoterModal(); }
+
+    async function submitAddVoter(event) {
+        event.preventDefault();
+        const form = document.getElementById('addVoterForm');
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('/admin/api/add_voter', {
+                method: 'POST',
+                headers: { 'token': token },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                alert('Voter added successfully!');
+                closeAddVoterModal();
+                fetchVoters();
+            } else {
+                alert(`Error: ${result.message}`);
+            }
+        } catch (error) {
+            alert('An error occurred while adding the voter.');
+        }
     }
 
-    // Initial Load
     window.onload = fetchVoters;
 </script>
 {% endblock %}

@@ -25,7 +25,7 @@ class Admin(db.Model):
     def add(username: str, email: str, password: str):
         try:
             hashed_pw = hash_password(password)
-            new_admin = Admin(username=username,email=email, password_hash=hashed_pw)
+            new_admin = Admin(username=username, email=email, password_hash=hashed_pw)
             db.session.add(new_admin)
             db.session.commit()
             return new_admin
@@ -33,6 +33,10 @@ class Admin(db.Model):
             db.session.rollback()
             print(f"Could not add admin with email {email}, ex: {ex}")
             return False
+
+    @staticmethod
+    def get_by_id(admin_id: int):
+        return Admin.query.filter_by(id=admin_id).first()
 
 
 class Election(db.Model):
@@ -65,21 +69,39 @@ class Candidate(db.Model):
 
 
 class Voter(db.Model):
+    __tablename__ = 'voter'
     id = db.Column(db.Integer, primary_key=True)
-    voter_id_number = db.Column(db.String(20), unique=True, nullable=False)
+    prn = db.Column(db.String(20), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    phone = db.Column(db.String(15), unique=True, nullable=False)
-    is_verified = db.Column(db.Boolean, default=False)
-    has_voted = db.Column(db.Boolean, default=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    image_path = db.Column(db.String(255), nullable=False)
 
-    def __init__(self, voter_id_number, name, email, phone, is_verified=False, has_voted=False):
-        self.voter_id_number = voter_id_number
+    def __init__(self, prn, name, email, password_hash, image_path):
+        self.prn = prn
         self.name = name
         self.email = email
-        self.phone = phone
-        self.is_verified = is_verified
-        self.has_voted = has_voted
+        self.password_hash = password_hash
+        self.image_path = image_path
+
+    @staticmethod
+    def get_by_prn(prn):
+        return Voter.query.filter_by(prn=prn).first()
+
+    @staticmethod
+    def add(prn, name, email, password_hash, image_path):
+        voter = Voter(prn, name, email, password_hash, image_path)
+        db.session.add(voter)
+        db.session.commit()
+        return voter
+
+    @staticmethod
+    def get_all_voters():
+        voters: list[Voter] = Voter.query.all()
+        voter_data = []
+        for voter in voters:
+            voter_data.append({"id": voter.id, "prn": voter.prn, "name": voter.name, "email": voter.email})
+        return voter_data
 
 
 class Vote(db.Model):
