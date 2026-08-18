@@ -86,6 +86,21 @@
         color: #2ecc71;
         border: 1px solid #d5f5e3;
     }
+    /* New Footer Styles added here */
+    .form-footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+        color: #555;
+    }
+    .form-footer a {
+        color: #3498db;
+        text-decoration: none;
+        font-weight: normal; /* Changed from bold to normal */
+    }
+    .form-footer a:hover {
+        text-decoration: underline;
+    }
 </style>
 
 <div class="form-card">
@@ -103,7 +118,7 @@
             <label for="username">Username</label>
             <input type="text" id="username" name="username" required placeholder="Enter username">
         </div>
-        
+
         <div class="form-group">
             <label for="email">Email Address</label>
             <input type="email" id="email" name="email" required placeholder="admin@example.com">
@@ -116,6 +131,11 @@
 
         <button type="submit" class="btn-submit" id="submitBtn">Register Admin</button>
     </form>
+
+    <!-- Admin Login Link added here -->
+    <div class="form-footer">
+        Already have an account? <a href="/admin/ui/login">Login here</a>
+    </div>
 </div>
 
 <!-- Inline JavaScript API Integration -->

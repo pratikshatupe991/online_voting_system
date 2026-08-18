@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* Layout & Containers */
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    
+    /* Top Navigation/Header area specific to dashboard */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: white;
+        padding: 20px 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+        border-left: 5px solid #3498db;
+    }
+    .welcome-text h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+    }
+    .welcome-text p {
+        margin: 5px 0 0 0;
+        color: #777;
+        font-size: 14px;
+    }
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    /* Buttons */
+    .btn-logout {
+        background-color: #fff;
+        color: #e74c3c;
+        border: 1px solid #e74c3c;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-logout:hover {
+        background-color: #e74c3c;
+        color: white;
+    }
+    .btn-vote {
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background-color 0.3s;
+    }
+    .btn-vote:hover {
+        background-color: #27ae60;
+    }
+    .btn-disabled {
+        background-color: #bdc3c7;
+        cursor: not-allowed;
+    }
+    .btn-disabled:hover {
+        background-color: #bdc3c7;
+    }
+
+    /* Section Headers */
+    .section-title {
+        color: #2c3e50;
+        font-size: 20px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 10px;
+    }
+
+    /* Election Cards Grid */
+    .elections-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+    }
+    
+    .election-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        transition: transform 0.3s;
+        border: 1px solid #f0f0f0;
+        position: relative;
+        overflow: hidden;
+    }
+    .election-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    
+    /* Status Badge */
+    .status-badge {
+        position: absolute;
+        top: 20px;
+        right: -30px;
+        background-color: #2ecc71;
+        color: white;
+        padding: 5px 30px;
+        font-size: 12px;
+        font-weight: bold;
+        transform: rotate(45deg);
+        text-align: center;
+        width: 100px;
+    }
+    .status-badge.completed {
+        background-color: #3498db;
+    }
+
+    .election-card h3 {
+        margin: 0 0 15px 0;
+        color: #2c3e50;
+        font-size: 20px;
+        padding-right: 20px;
+    }
+    .election-details {
+        margin-bottom: 20px;
+    }
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #555;
+    }
+    .detail-label {
+        font-weight: bold;
+        color: #2c3e50;
+    }
+</style>
+
+<div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+        <div class="welcome-text">
+            <h2>Welcome, <span id="displayUsername">Voter</span>!</h2>
+            <p>JNEC Student Council Elections Portal | PRN: <span id="displayPrn">...</span></p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-logout" onclick="logoutVoter()">Logout</button>
+        </div>
+    </div>
+
+    <!-- Active Elections Section -->
+    <h3 class="section-title">🟢 Active Elections</h3>
+    <div class="elections-grid" id="activeElectionsContainer">
+        <!-- Sample Static Card 1 -->
+        <div class="election-card">
+            <div class="status-badge">LIVE</div>
+            <h3>President - Student Council</h3>
+            <div class="election-details">
+                <div class="detail-row">
+                    <span class="detail-label">Start Time:</span>
+                    <span>Aug 20, 2026 - 09:00 AM</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">End Time:</span>
+                    <span>Aug 21, 2026 - 05:00 PM</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Candidates:</span>
+                    <span>4 Nominees</span>
+                </div>
+            </div>
+            <!-- The button will eventually trigger the facial recognition flow -->
+            <button class="btn-vote" onclick="startVotingProcess(1)">Proceed to Vote</button>
+        </div>
+
+        <!-- Sample Static Card 2 -->
+        <div class="election-card">
+            <div class="status-badge">LIVE</div>
+            <h3>General Secretary</h3>
+            <div class="election-details">
+                <div class="detail-row">
+                    <span class="detail-label">Start Time:</span>
+                    <span>Aug 20, 2026 - 09:00 AM</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">End Time:</span>
+                    <span>Aug 21, 2026 - 05:00 PM</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Candidates:</span>
+                    <span>2 Nominees</span>
+                </div>
+            </div>
+            <button class="btn-vote" onclick="startVotingProcess(2)">Proceed to Vote</button>
+        </div>
+    </div>
+
+    <!-- Completed/Past Elections Section -->
+    <h3 class="section-title" style="margin-top: 50px;">🔵 Past Elections (Results)</h3>
+    <div class="elections-grid" id="pastElectionsContainer">
+        <!-- Sample Static Card 3 -->
+        <div class="election-card" style="opacity: 0.8;">
+            <div class="status-badge completed">ENDED</div>
+            <h3>Cultural Secretary 2025</h3>
+            <div class="election-details">
+                <div class="detail-row">
+                    <span class="detail-label">Election Date:</span>
+                    <span>Aug 15, 2025</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Your Status:</span>
+                    <span style="color: #2ecc71; font-weight: bold;">Voted</span>
+                </div>
+            </div>
+            <button class="btn-vote" style="background-color: #3498db;" onclick="viewResults(3)">View Results</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Authentication Check & Profile Load
+    document.addEventListener("DOMContentLoaded", function() {
+        const token = sessionStorage.getItem('voter_token');
+        
+        // If no token, kick them back to login
+        if (!token) {
+            window.location.href = '/voter/ui/login';
+            return;
+        }
+
+        // Populate User Data from session storage
+        const username = sessionStorage.getItem('voter_username') || 'Student';
+        // We didn't save PRN directly in the last script, but we have voter_id. 
+        // For a real app, you can fetch profile data via an API here.
+        const voterId = sessionStorage.getItem('voter_id') || 'Unknown';
+
+        document.getElementById('displayUsername').innerText = username;
+        document.getElementById('displayPrn').innerText = `ID: ${voterId}`;
+    });
+
+    // 2. Action Functions
+    function startVotingProcess(electionId) {
+        // This is where you will redirect to the Face Verification page before showing the ballot
+        alert(`Initiating facial verification for Election ID: ${electionId}...`);
+        // window.location.href = `/voter/ui/verify_face?election_id=${electionId}`;
+    }
+
+    function viewResults(electionId) {
+        alert(`Loading results for Election ID: ${electionId}...`);
+    }
+
+    function logoutVoter() {
+        // Clear all session data
+        sessionStorage.removeItem('voter_token');
+        sessionStorage.removeItem('voter_id');
+        sessionStorage.removeItem('voter_username');
+        
+        // Redirect to homepage or login
+        window.location.href = '/';
+    }
+</script>
+{% endblock %}

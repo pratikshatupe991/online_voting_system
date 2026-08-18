@@ -66,11 +66,6 @@
         <h2>Online Voting System</h2>
         <div class="nav-links">
             <a href="{{ url_for('main.index') }}">Home</a>
-
-            <!-- These links toggle automatically based on context -->
-            <a href="/admin/ui/login" id="navLoginBtn">Login</a>
-            <a href="/admin/ui/signup" id="navSignupBtn" style="display: none;">Sign up</a>
-            <a href="javascript:void(0);" id="navLogoutBtn" style="display: none;" onclick="handleLogout()">Logout</a>
         </div>
     </div>
 
@@ -86,45 +81,5 @@
         &copy; 2026 Online Voting System. Secure & Transparent Elections.
     </div>
 
-    <!-- Global Authentication Script -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const token = sessionStorage.getItem('login_token');
-            const loginBtn = document.getElementById('navLoginBtn');
-            const signupBtn = document.getElementById('navSignupBtn');
-            const logoutBtn = document.getElementById('navLogoutBtn');
-            const currentPath = window.location.pathname;
-
-            if (token) {
-                // Admin is logged in: Only show Logout
-                if (loginBtn) loginBtn.style.display = 'none';
-                if (signupBtn) signupBtn.style.display = 'none';
-                if (logoutBtn) logoutBtn.style.display = 'inline-block';
-            } else {
-                // Admin is logged out: Hide Logout
-                if (logoutBtn) logoutBtn.style.display = 'none';
-
-                // Smart context switching for Login / Sign Up buttons
-                if (currentPath === '/admin/ui/login') {
-                    if (loginBtn) loginBtn.style.display = 'none';
-                    if (signupBtn) signupBtn.style.display = 'inline-block';
-                } else if (currentPath === '/admin/ui/signup') {
-                    if (loginBtn) loginBtn.style.display = 'inline-block';
-                    if (signupBtn) signupBtn.style.display = 'none';
-                } else {
-                    // Default for home page or other unauthenticated pages
-                    if (loginBtn) loginBtn.style.display = 'inline-block';
-                    if (signupBtn) signupBtn.style.display = 'none';
-                }
-            }
-        });
-
-        function handleLogout() {
-            // Clear the login session and redirect
-            sessionStorage.removeItem('login_token');
-            sessionStorage.removeItem('admin_username');
-            window.location.href = '/admin/ui/login';
-        }
-    </script>
 </body>
 </html>

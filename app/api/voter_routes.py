@@ -89,3 +89,8 @@ def voter_login():
 @voter_bp.route('/voter/ui/login', methods=['GET'])
 def voter_login_page():
     return render_template('voter/login.html')
+
+
+@voter_bp.route('/voter/ui/dashboard', methods=['GET'])
+def voter_dashboard_page():
+    return render_template('voter/dashboard.html')
