@@ -5,7 +5,7 @@ from functools import wraps
 from flask import request, jsonify, current_app
 
 
-def generate_jwt_token(admin_id, email):
+def generate_jwt_token_admin(admin_id, email):
     """
     Generates a 24-hour JWT token for the authenticated admin.
     """
@@ -15,6 +15,23 @@ def generate_jwt_token(admin_id, email):
     payload = {
         'admin_id': admin_id,
         'email': email,
+        'exp': now + datetime.timedelta(hours=24)
+    }
+    # Create the token using the app's secret key
+    token = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
+    return token
+
+
+def generate_jwt_token_voter(voter_id, prn):
+    """
+    Generates a 24-hour JWT token for the authenticated admin.
+    """
+    # Using timezone-aware UTC datetime
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    payload = {
+        'voter_id': voter_id,
+        'prn': prn,
         'exp': now + datetime.timedelta(hours=24)
     }
     # Create the token using the app's secret key

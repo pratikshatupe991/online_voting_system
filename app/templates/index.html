@@ -74,25 +74,24 @@
 </style>
 
 <div class="hero-section">
-    <h1>Secure Digital Elections</h1>
+    <h1>JNEC Student Council Elections</h1>
     <p>
-        Welcome to the Online Voting System. Our platform ensures transparent, 
-        accurate, and efficient elections with secure authentication and real-time result generation.
+        Welcome to the official online voting portal for Jawaharlal Nehru Engineering College, MGM University. Our platform ensures transparent, accurate, and efficient student elections with secure facial recognition and real-time result generation.
     </p>
 
     <div class="card-container">
         <!-- Voter Portal Card -->
         <div class="portal-card">
             <h3>Voter Portal</h3>
-            <p>Verify your identity using OTP and cast your vote securely.</p>
-            <a href="#" class="btn-portal btn-voter">Access Voter Portal</a>
+            <p>Verify your identity using facial recognition and cast your vote securely.</p>
+            <a href="/voter/ui/login" class="btn-portal btn-voter">Voter Login</a>
         </div>
 
         <!-- Admin Portal Card -->
         <div class="portal-card">
             <h3>Admin Portal</h3>
             <p>Manage elections, candidates, and oversee the voting process.</p>
-            <a href="{{ url_for('admin.admin_signup_page') }}" class="btn-portal btn-admin">Admin Registration</a>
+            <a href="/admin/ui/login" class="btn-portal btn-admin">Admin Login</a>
         </div>
     </div>
 </div>

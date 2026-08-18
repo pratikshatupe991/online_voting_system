@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Embedded Styles for Form Component -->
+<style>
+    .form-card {
+        background-color: #ffffff;
+        max-width: 450px;
+        margin: 40px auto;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-top: 5px solid #2c3e50;
+    }
+    .form-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .form-header h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+    }
+    .form-header p {
+        color: #777;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #555;
+        font-size: 14px;
+    }
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    .form-group input:focus {
+        border-color: #3498db;
+        outline: none;
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .btn-submit:hover {
+        background-color: #2980b9;
+    }
+    .btn-submit:disabled {
+        background-color: #bdc3c7;
+        cursor: not-allowed;
+    }
+    .alert {
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        display: none;
+        font-size: 14px;
+        text-align: center;
+    }
+    .alert-error {
+        background-color: #fdecea;
+        color: #e74c3c;
+        border: 1px solid #fad2cf;
+    }
+    .alert-success {
+        background-color: #eafaf1;
+        color: #2ecc71;
+        border: 1px solid #d5f5e3;
+    }
+</style>
+
+<div class="form-card">
+    <div class="form-header">
+        <h3>Voter Registration</h3>
+        <p>Register yourself to vote</p>
+    </div>
+
+    <!-- Alert Box for Responses -->
+    <div id="apiMessage" class="alert"></div>
+
+    <!-- Voter Registration Form -->
+    <form id="voterSignupForm">
+        <div class="form-group">
+            <label for="prn">PRN</label>
+            <input type="text" id="prn" name="prn" required placeholder="Enter PRN">
+        </div>
+
+        <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" required placeholder="Enter full name">
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" required placeholder="student@college.edu">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required placeholder="Enter password">
+        </div>
+
+        <div class="form-group">
+            <label for="profile_img">Profile Image (JPG, PNG)</label>
+            <input type="file" id="profile_img" name="profile_img" accept=".jpg, .jpeg, .png" required>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">Register Voter</button>
+    </form>
+</div>
+
+<!-- Inline JavaScript API Integration -->
+<script>
+    document.getElementById('voterSignupForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const form = document.getElementById('voterSignupForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const messageBox = document.getElementById('apiMessage');
+        
+        // Update button UI state
+        submitBtn.innerText = "Registering...";
+        submitBtn.disabled = true;
+
+        // Use FormData for file uploads (DO NOT stringify to JSON)
+        const formData = new FormData(form);
+
+        try {
+            // Calling POST API endpoint: /voter/api/voter_sign_up
+            const response = await fetch('/voter/api/voter_sign_up', {
+                method: 'POST',
+                // Note: Do NOT set 'Content-Type' when using FormData. The browser handles the multipart boundary automatically.
+                body: formData
+            });
+
+            const data = await response.json();
+
+            messageBox.style.display = 'block';
+            
+            if (response.ok && data.status === 'success') {
+                messageBox.className = 'alert alert-success';
+                messageBox.innerText = data.message;
+                form.reset();
+            } else {
+                messageBox.className = 'alert alert-error';
+                messageBox.innerText = data.message || 'Registration failed.';
+            }
+
+        } catch (error) {
+            console.error("API Error:", error);
+            messageBox.style.display = 'block';
+            messageBox.className = 'alert alert-error';
+            messageBox.innerText = "A network error occurred. Please check your connection.";
+        } finally {
+            submitBtn.innerText = "Register Voter";
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

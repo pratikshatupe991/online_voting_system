@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .form-card {
+        background-color: #ffffff;
+        max-width: 400px;
+        margin: 60px auto;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-top: 5px solid #3498db;
+    }
+    .form-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .form-header h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+    }
+    .form-header p {
+        color: #777;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #555;
+        font-size: 14px;
+    }
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    .form-group input:focus {
+        border-color: #3498db;
+        outline: none;
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    .btn-submit:hover {
+        background-color: #2980b9;
+    }
+    .btn-submit:disabled {
+        background-color: #bdc3c7;
+        cursor: not-allowed;
+    }
+    .alert {
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        display: none;
+        font-size: 14px;
+        text-align: center;
+    }
+    .alert-error {
+        background-color: #fdecea;
+        color: #e74c3c;
+        border: 1px solid #fad2cf;
+    }
+    .alert-success {
+        background-color: #eafaf1;
+        color: #2ecc71;
+        border: 1px solid #d5f5e3;
+    }
+    .form-footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+        color: #555;
+    }
+    .form-footer a {
+        color: #3498db;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    .form-footer a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="form-card">
+    <div class="form-header">
+        <h3>Voter Login</h3>
+        <p>Access your JNEC voting portal</p>
+    </div>
+
+    <!-- Alert Box for Responses -->
+    <div id="apiMessage" class="alert"></div>
+
+    <!-- Voter Login Form -->
+    <form id="voterLoginForm">
+        <div class="form-group">
+            <label for="prn">PRN</label>
+            <input type="text" id="prn" name="prn" required placeholder="Enter your PRN">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required placeholder="Enter your password">
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">Login</button>
+    </form>
+
+    <div class="form-footer">
+        Don't have an account? <a href="/voter/ui/signup">Register here</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById('voterLoginForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const submitBtn = document.getElementById('submitBtn');
+        const messageBox = document.getElementById('apiMessage');
+        let response;
+
+        submitBtn.innerText = "Authenticating...";
+        submitBtn.disabled = true;
+
+        const payload = {
+            prn: document.getElementById('prn').value.trim(),
+            password: document.getElementById('password').value
+        };
+
+        try {
+            response = await fetch('/voter/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            messageBox.style.display = 'block';
+
+            if (response.ok && data.status === 'success') {
+                messageBox.className = 'alert alert-success';
+                messageBox.innerText = data.message;
+
+                // Save the token, voter_id, and username to sessionStorage
+                sessionStorage.setItem('voter_token', data.data.token);
+                sessionStorage.setItem('voter_id', data.data.voter_id);
+                sessionStorage.setItem('voter_username', data.data.username);
+
+                // Redirect to the voter dashboard after a short delay
+                setTimeout(() => {
+                    window.location.href = '/voter/ui/dashboard'; // Update if your dashboard route is different
+                }, 1000);
+            } else {
+                messageBox.className = 'alert alert-error';
+                messageBox.innerText = data.message || 'Login failed.';
+            }
+
+        } catch (error) {
+            console.error("API Error:", error);
+            messageBox.style.display = 'block';
+            messageBox.className = 'alert alert-error';
+            messageBox.innerText = "A network error occurred. Please check your connection.";
+        } finally {
+            if (!response?.ok) {
+                submitBtn.innerText = "Login";
+                submitBtn.disabled = false;
+            }
+        }
+    });
+</script>
+{% endblock %}
