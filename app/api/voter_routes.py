@@ -1,6 +1,6 @@
 import json
 import os
-from flask import Blueprint, request, jsonify, render_template
+from flask import Blueprint, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 import config
 from app.models import Voter
@@ -94,3 +94,20 @@ def voter_login_page():
 @voter_bp.route('/voter/ui/dashboard', methods=['GET'])
 def voter_dashboard_page():
     return render_template('voter/dashboard.html')
+
+
+@voter_bp.route('/voter/api/get_participant_image/<prn>', methods=['GET'])
+def get_participant_image(prn: str):
+    try:
+        voter: Voter = Voter.get_by_prn(prn)
+        if not voter:
+            return jsonify({"status": "error", "message": f"Voter/Participant does not exist with PRN: {prn}."}), 404
+        cwd_path = os.getcwd()
+        relative_path = voter.image_path.lstrip('/\\')
+        img_path = os.path.normpath(os.path.join(cwd_path, relative_path))
+        if not os.path.exists(img_path):
+            return jsonify({"status": "error", "message": "Image not found on server."}), 404
+        return send_file(img_path)
+    except Exception as ex:
+        print(f"Fetch participant image error: {ex}")
+        return jsonify({"status": "error", "message": "Internal server error."}), 500

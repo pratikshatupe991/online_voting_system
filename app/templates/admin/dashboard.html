@@ -2,212 +2,214 @@
 
 {% block content %}
 <style>
-    .dashboard-container {
-        padding: 30px 20px;
-        max-width: 1200px;
-        margin: 0 auto;
+    /* 🔥 FULL SCREEN WIDTH OVERRIDE 🔥 */
+    .container {
+        max-width: 100% !important;
+        padding: 0 40px !important;
     }
-    
+
+    /* Layout & Containers */
+    .dashboard-container {
+        width: 100%;
+        margin: 30px auto;
+    }
+
+    /* Top Navigation/Header area */
     .dashboard-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 25px;
-    }
-    .dashboard-header h2 {
-        color: #2c3e50;
-        margin: 0;
-    }
-
-    .filter-section {
         background-color: white;
-        padding: 20px;
+        padding: 20px 30px;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        margin-bottom: 25px;
-        display: flex;
-        gap: 15px;
-        align-items: center;
+        margin-bottom: 40px;
+        border-left: 5px solid #2c3e50;
     }
-    .filter-group {
+    .welcome-text h2 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+    }
+    .welcome-text p {
+        margin: 5px 0 0 0;
+        color: #777;
+        font-size: 14px;
+    }
+
+    /* Buttons */
+    .btn-logout {
+        background-color: #fff;
+        color: #e74c3c;
+        border: 1px solid #e74c3c;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-logout:hover {
+        background-color: #e74c3c;
+        color: white;
+    }
+
+    /* Admin Modules Grid - Strictly 4 items in one line */
+    .modules-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 25px;
+        margin-bottom: 50px;
+    }
+
+    .module-card {
+        background-color: white;
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+        border: 1px solid #eee;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
         display: flex;
         flex-direction: column;
+        align-items: center;
     }
-    .filter-group label {
-        font-size: 12px;
-        font-weight: bold;
-        color: #555;
-        margin-bottom: 5px;
-    }
-    .filter-group input {
-        padding: 8px 12px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 14px;
-        min-width: 200px;
-    }
-    .btn-secondary {
-        background-color: #ecf0f1;
-        color: #2c3e50;
-        padding: 9px 15px;
-        border: 1px solid #bdc3c7;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        margin-top: 19px;
-    }
-    .btn-secondary:hover { background-color: #e0e6ed; }
 
-    .table-container {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        overflow: hidden;
+    .module-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+        border-color: #3498db;
     }
-    table {
-        width: 100%;
-        border-collapse: collapse;
+
+    .module-icon {
+        width: 64px;
+        height: 64px;
+        color: #3498db;
+        margin-bottom: 20px;
     }
-    th, td {
-        padding: 15px;
-        text-align: left;
-        border-bottom: 1px solid #eee;
-        vertical-align: middle;
-    }
-    th {
-        background-color: #f8f9fa;
+
+    .module-card h3 {
+        margin: 0 0 10px 0;
         color: #2c3e50;
-        font-weight: bold;
+        font-size: 20px;
     }
-    tr:hover { background-color: #f1f4f6; }
-    .empty-state {
-        text-align: center;
-        padding: 40px;
+
+    .module-card p {
+        margin: 0;
         color: #777;
-    }
-
-    .voter-img {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 1px solid #ccc;
+        font-size: 14px;
+        line-height: 1.5;
     }
 </style>
 
 <div class="dashboard-container">
+    <!-- Header Section -->
     <div class="dashboard-header">
-        <h2>Admin Dashboard</h2>
+        <div class="welcome-text">
+            <h2>Welcome, <span id="adminUsername">Admin</span>!</h2>
+            <p>JNEC Student Council Elections | Main Control Panel</p>
+            <p style="color: #2ecc71; font-weight: bold; margin-top: 5px;">Total Registered Voters: <span id="voterCount">Loading...</span></p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
+        </div>
     </div>
 
-    <div class="filter-section">
-        <div class="filter-group">
-            <label for="filterPRN">PRN ID</label>
-            <input type="text" id="filterPRN" placeholder="Enter PRN ID">
-        </div>
-        <div class="filter-group">
-            <label for="filterName">Voter Name</label>
-            <input type="text" id="filterName" placeholder="Enter Voter Name">
-        </div>
-        <button class="btn-secondary" onclick="applyFilters()">Filter</button>
-        <button class="btn-secondary" onclick="clearFilters()" style="margin-left: 5px;">Clear</button>
-    </div>
+    <!-- Admin Modules Grid -->
+    <div class="modules-grid">
 
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Image</th>
-                    <th>PRN ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                </tr>
-            </thead>
-            <tbody id="voterTableBody">
-                <tr>
-                    <td colspan="4" class="empty-state">Loading voters...</td>
-                </tr>
-            </tbody>
-        </table>
+        <!-- Module 1: Election Management (Link Updated Here) -->
+        <a href="/admin/ui/dashboard/elections" class="module-card">
+            <svg class="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+            </svg>
+            <h3>Election Management</h3>
+            <p>Create new elections, set voting schedules, and manage ballot configurations.</p>
+        </a>
+
+        <!-- Module 2: Candidate Management -->
+        <a href="/admin/ui/dashboard/voters" class="module-card">
+            <svg class="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+            <h3>Voter Management</h3>
+            <p>Approve nominations, manage candidate profiles, and review manifestos.</p>
+        </a>
+
+        <!-- Module 3: Results -->
+        <a href="#" class="module-card">
+            <svg class="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <h3>Results & Analytics</h3>
+            <p>View real-time turnout statistics, count tallies, and declare final winners.</p>
+        </a>
+
+        <!-- Module 4: Announcements and Notification -->
+        <a href="#" class="module-card">
+            <svg class="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
+            </svg>
+            <h3>Announcements</h3>
+            <p>Broadcast alerts, update voting instructions, and notify students instantly.</p>
+        </a>
+
     </div>
 </div>
 
 <script>
-    const token = sessionStorage.getItem('login_token');
-    if (!token) window.location.href = '/admin/login';
+    document.addEventListener("DOMContentLoaded", async function() {
+        const token = sessionStorage.getItem('login_token');
 
-    let allVoters = [];
+        // If no token, redirect to admin login
+        if (!token) {
+            window.location.href = '/admin/ui/login';
+            return;
+        }
 
-    async function fetchVoters() {
+        // Display saved username
+        const username = sessionStorage.getItem('admin_username');
+        if (username) {
+            document.getElementById('adminUsername').innerText = username;
+        }
+
+        // Exact original API integration fetching all voters
         try {
             const response = await fetch('/admin/api/get_voters', {
                 method: 'GET',
-                headers: { 'token': token }
+                headers: {
+                    'token': token,
+                    'Content-Type': 'application/json'
+                }
             });
 
             if (response.status === 401) {
+                // Invalid or expired token
                 sessionStorage.removeItem('login_token');
-                window.location.href = '/admin/login';
+                sessionStorage.removeItem('admin_username');
+                window.location.href = '/admin/ui/login';
                 return;
             }
 
             const result = await response.json();
-
             if (response.ok && result.status === 'success') {
-                allVoters = result.data;
-                renderTable(allVoters);
+                // Optional: Show count in the UI so the API data is actually used
+                document.getElementById('voterCount').innerText = result.data.length || 0;
             } else {
-                document.getElementById('voterTableBody').innerHTML =
-                    `<tr><td colspan="4" class="empty-state">Failed to load data: ${result.message}</td></tr>`;
+                document.getElementById('voterCount').innerText = "Failed to load";
             }
         } catch (error) {
-            console.error('Error fetching voters:', error);
-            document.getElementById('voterTableBody').innerHTML =
-                `<tr><td colspan="4" class="empty-state">Error fetching data.</td></tr>`;
+            console.error("API Error connecting to backend:", error);
+            document.getElementById('voterCount').innerText = "Error";
         }
+    });
+
+    function logoutAdmin() {
+        sessionStorage.removeItem('login_token');
+        sessionStorage.removeItem('admin_username');
+        window.location.href = '/';
     }
-
-    function renderTable(voterArray) {
-        const tbody = document.getElementById('voterTableBody');
-        tbody.innerHTML = '';
-
-        if (voterArray.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No voters found.</td></tr>';
-            return;
-        }
-
-        voterArray.forEach(voter => {
-            const row = document.createElement('tr');
-            // Use API image if it exists, otherwise use a generic placeholder
-            const imgSrc = voter.image_path ? voter.image_path : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(voter.name) + '&background=random';
-
-            row.innerHTML = `
-                <td><img src="${imgSrc}" class="voter-img" alt="${voter.name}"></td>
-                <td>${voter.prn}</td>
-                <td>${voter.name}</td>
-                <td>${voter.email}</td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    function applyFilters() {
-        const filterPRN = document.getElementById('filterPRN').value.toLowerCase();
-        const filterName = document.getElementById('filterName').value.toLowerCase();
-
-        const filteredData = allVoters.filter(voter => {
-            return voter.prn.toLowerCase().includes(filterPRN) &&
-                   voter.name.toLowerCase().includes(filterName);
-        });
-        renderTable(filteredData);
-    }
-
-    function clearFilters() {
-        document.getElementById('filterPRN').value = '';
-        document.getElementById('filterName').value = '';
-        renderTable(allVoters);
-    }
-
-    window.onload = fetchVoters;
 </script>
 {% endblock %}

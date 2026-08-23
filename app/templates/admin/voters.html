@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    /* Layout */
+    .dashboard-container {
+        padding: 30px 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-left: 5px solid #3498db;
+    }
+    .dashboard-header h2 {
+        color: #2c3e50;
+        margin: 0;
+    }
+    .btn-primary {
+        background-color: #3498db;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-primary:hover { background-color: #2980b9; }
+
+    /* Filters */
+    .filter-section {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 25px;
+        display: flex;
+        gap: 15px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    .filter-group label {
+        font-size: 12px;
+        font-weight: bold;
+        color: #555;
+        margin-bottom: 5px;
+    }
+    .filter-group input {
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        min-width: 200px;
+    }
+    .btn-secondary {
+        background-color: #ecf0f1;
+        color: #2c3e50;
+        padding: 9px 15px;
+        border: 1px solid #bdc3c7;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-secondary:hover { background-color: #e0e6ed; }
+
+    /* Table */
+    .table-container {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+        vertical-align: middle;
+    }
+    th {
+        background-color: #f8f9fa;
+        color: #2c3e50;
+        font-weight: bold;
+    }
+    tr:hover { background-color: #f1f4f6; }
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #777;
+    }
+
+    .candidate-img {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid #ccc;
+    }
+</style>
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h2>Voter Management</h2>
+        <button class="btn-primary" onclick="window.location.href='/admin/ui/dashboard'">Back to Dashboard</button>
+    </div>
+
+    <div class="filter-section">
+        <div class="filter-group">
+            <label for="filterPRN">Search by PRN</label>
+            <input type="text" id="filterPRN" placeholder="Enter PRN">
+        </div>
+        <div class="filter-group">
+            <label for="filterName">Search by Name</label>
+            <input type="text" id="filterName" placeholder="Enter Name">
+        </div>
+        <button class="btn-secondary" onclick="applyFilters()">Filter</button>
+        <button class="btn-secondary" onclick="clearFilters()" style="margin-left: 5px;">Clear</button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>PRN</th>
+                    <th>Voter Name</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody id="candidateTableBody">
+                <tr>
+                    <td colspan="4" class="empty-state">Loading candidates...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Ensure admin is logged in
+    const token = sessionStorage.getItem('login_token');
+    if (!token) window.location.href = '/admin/ui/login';
+
+    let allCandidates = [];
+
+    // Fetch Candidates Data
+    async function fetchCandidates() {
+        try {
+            const response = await fetch('/admin/api/get_voters', {
+                method: 'GET',
+                headers: { 'token': token }
+            });
+
+            if (response.status === 401) {
+                sessionStorage.removeItem('login_token');
+                window.location.href = '/admin/ui/login';
+                return;
+            }
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                allCandidates = result.data;
+                renderTable(allCandidates);
+            } else {
+                document.getElementById('candidateTableBody').innerHTML =
+                    `<tr><td colspan="4" class="empty-state">Failed to load data: ${result.message || 'No candidates found.'}</td></tr>`;
+            }
+        } catch (error) {
+            console.error('Error fetching candidates:', error);
+            document.getElementById('candidateTableBody').innerHTML =
+                `<tr><td colspan="4" class="empty-state">Error fetching data. Check console.</td></tr>`;
+        }
+    }
+
+    // Render Table
+    function renderTable(candidateArray) {
+        const tbody = document.getElementById('candidateTableBody');
+        tbody.innerHTML = '';
+
+        if (!candidateArray || candidateArray.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No candidates found.</td></tr>';
+            return;
+        }
+
+        candidateArray.forEach(candidate => {
+            const row = document.createElement('tr');
+
+            // Using voter_img_url from your updated API response with fallback
+            const imgSrc = candidate.voter_img_url && candidate.voter_img_url.trim() !== ""
+                ? candidate.voter_img_url
+                : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(candidate.name) + '&background=random';
+
+            row.innerHTML = `
+                <td><img src="${imgSrc}" class="candidate-img" alt="${candidate.name}"></td>
+                <td>${candidate.prn}</td>
+                <td>${candidate.name}</td>
+                <td>${candidate.email}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Filter Logic
+    function applyFilters() {
+        const filterPRN = document.getElementById('filterPRN').value.toLowerCase();
+        const filterName = document.getElementById('filterName').value.toLowerCase();
+
+        const filteredData = allCandidates.filter(candidate => {
+            const matchesPrn = candidate.prn.toLowerCase().includes(filterPRN);
+            const matchesName = candidate.name.toLowerCase().includes(filterName);
+            return matchesPrn && matchesName;
+        });
+
+        renderTable(filteredData);
+    }
+
+    function clearFilters() {
+        document.getElementById('filterPRN').value = '';
+        document.getElementById('filterName').value = '';
+        renderTable(allCandidates);
+    }
+
+    // Fetch on page load
+    window.onload = fetchCandidates;
+</script>
+{% endblock %}

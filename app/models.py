@@ -1,3 +1,4 @@
+import config
 from app import db
 from datetime import datetime, timezone
 from app.utils import hash_password
@@ -42,30 +43,59 @@ class Admin(db.Model):
 class Election(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
-    status = db.Column(db.String(20), default='Upcoming')
-    created_at = db.Column(db.DateTime)
+    start_ts = db.Column(db.DateTime)
+    end_ts = db.Column(db.DateTime)
 
-    candidates = db.relationship('Candidate', backref='election', lazy=True)
-    votes = db.relationship('Vote', backref='election', lazy=True)
-
-    def __init__(self, title, status='Upcoming', created_at=None):
+    def __init__(self, title, start_ts: datetime, end_ts: datetime):
         self.title = title
-        self.status = status
-        self.created_at = created_at or datetime.now(timezone.utc)
+        self.start_ts = start_ts
+        self.end_ts = end_ts
+
+    @staticmethod
+    def get_by_title(title: str):
+        return Election.query.filter_by(title=title).first()
+
+    @staticmethod
+    def get_by_id(election_id: int):
+        return Election.query.filter_by(id=election_id).first()
+
+    @staticmethod
+    def add(tile: str, start_ts: datetime, end_ts: datetime):
+        election = Election(title=tile, start_ts=start_ts, end_ts=end_ts)
+        db.session.add(election)
+        db.session.commit()
+        return election
+
+    @staticmethod
+    def get_all():
+        return Election.query.all()
 
 
 class Candidate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    party = db.Column(db.String(50), nullable=False)
+    prn = db.Column(db.String(20), unique=True, nullable=False)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
 
     votes = db.relationship('Vote', backref='candidate', lazy=True)
 
-    def __init__(self, name, party, election_id):
-        self.name = name
-        self.party = party
+    def __init__(self, prn, election_id):
+        self.prn = prn
         self.election_id = election_id
+
+    @staticmethod
+    def add(prn: str, election_id: int):
+        candidate = Candidate(prn=prn, election_id=election_id)
+        db.session.add(candidate)
+        db.session.commit()
+        return candidate
+
+    @staticmethod
+    def get_by_prn_and_election_id(prn: str, election_id: int):
+        return Candidate.query.filter_by(prn=prn, election_id=election_id).first()
+
+    @staticmethod
+    def get_by_election(election_id: int):
+        return Candidate.query.filter_by(election_id=election_id).all()
 
 
 class Voter(db.Model):
@@ -100,7 +130,9 @@ class Voter(db.Model):
         voters: list[Voter] = Voter.query.all()
         voter_data = []
         for voter in voters:
-            voter_data.append({"id": voter.id, "prn": voter.prn, "name": voter.name, "email": voter.email})
+            voter_img_url = f"{config.BASE_URL}//voter/api/get_participant_image/{voter.prn}"
+            voter_data.append({"id": voter.id, "prn": voter.prn, "name": voter.name, "email": voter.email,
+                               "voter_img_url": voter_img_url})
         return voter_data
 
 
