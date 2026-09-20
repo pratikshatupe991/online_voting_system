@@ -124,6 +124,9 @@
     .status-badge.completed {
         background-color: #3498db;
     }
+    .status-badge.upcoming {
+        background-color: #f39c12;
+    }
 
     .election-card h3 {
         margin: 0 0 15px 0;
@@ -145,6 +148,12 @@
         font-weight: bold;
         color: #2c3e50;
     }
+
+    .empty-message {
+        color: #777;
+        font-style: italic;
+        grid-column: 1 / -1;
+    }
 </style>
 
 <div class="dashboard-container">
@@ -159,72 +168,16 @@
         </div>
     </div>
 
-    <!-- Active Elections Section -->
-    <h3 class="section-title">🟢 Active Elections</h3>
+    <!-- Active/Upcoming Elections Section -->
+    <h3 class="section-title">🟢 Active & Upcoming Elections</h3>
     <div class="elections-grid" id="activeElectionsContainer">
-        <!-- Sample Static Card 1 -->
-        <div class="election-card">
-            <div class="status-badge">LIVE</div>
-            <h3>President - Student Council</h3>
-            <div class="election-details">
-                <div class="detail-row">
-                    <span class="detail-label">Start Time:</span>
-                    <span>Aug 20, 2026 - 09:00 AM</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">End Time:</span>
-                    <span>Aug 21, 2026 - 05:00 PM</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Candidates:</span>
-                    <span>4 Nominees</span>
-                </div>
-            </div>
-            <!-- The button will eventually trigger the facial recognition flow -->
-            <button class="btn-vote" onclick="startVotingProcess(1)">Proceed to Vote</button>
-        </div>
-
-        <!-- Sample Static Card 2 -->
-        <div class="election-card">
-            <div class="status-badge">LIVE</div>
-            <h3>General Secretary</h3>
-            <div class="election-details">
-                <div class="detail-row">
-                    <span class="detail-label">Start Time:</span>
-                    <span>Aug 20, 2026 - 09:00 AM</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">End Time:</span>
-                    <span>Aug 21, 2026 - 05:00 PM</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Candidates:</span>
-                    <span>2 Nominees</span>
-                </div>
-            </div>
-            <button class="btn-vote" onclick="startVotingProcess(2)">Proceed to Vote</button>
-        </div>
+        <div class="empty-message" id="activeLoading">Loading elections...</div>
     </div>
 
     <!-- Completed/Past Elections Section -->
     <h3 class="section-title" style="margin-top: 50px;">🔵 Past Elections (Results)</h3>
     <div class="elections-grid" id="pastElectionsContainer">
-        <!-- Sample Static Card 3 -->
-        <div class="election-card" style="opacity: 0.8;">
-            <div class="status-badge completed">ENDED</div>
-            <h3>Cultural Secretary 2025</h3>
-            <div class="election-details">
-                <div class="detail-row">
-                    <span class="detail-label">Election Date:</span>
-                    <span>Aug 15, 2025</span>
-                </div>
-                <div class="detail-row">
-                    <span class="detail-label">Your Status:</span>
-                    <span style="color: #2ecc71; font-weight: bold;">Voted</span>
-                </div>
-            </div>
-            <button class="btn-vote" style="background-color: #3498db;" onclick="viewResults(3)">View Results</button>
-        </div>
+        <div class="empty-message" id="pastLoading">Loading past elections...</div>
     </div>
 </div>
 
@@ -232,7 +185,7 @@
     // 1. Authentication Check & Profile Load
     document.addEventListener("DOMContentLoaded", function() {
         const token = sessionStorage.getItem('voter_token');
-        
+
         // If no token, kick them back to login
         if (!token) {
             window.location.href = '/voter/ui/login';
@@ -241,19 +194,122 @@
 
         // Populate User Data from session storage
         const username = sessionStorage.getItem('voter_username') || 'Student';
-        // We didn't save PRN directly in the last script, but we have voter_id. 
-        // For a real app, you can fetch profile data via an API here.
         const voterId = sessionStorage.getItem('voter_id') || 'Unknown';
 
         document.getElementById('displayUsername').innerText = username;
         document.getElementById('displayPrn').innerText = `ID: ${voterId}`;
+
+        // Fetch and render elections
+        fetchElections(token);
     });
 
-    // 2. Action Functions
+    // Helper to format date
+    function formatDateTime(dateStr) {
+        if (!dateStr) return 'N/A';
+        const d = new Date(dateStr);
+        return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    // Main fetch function
+    async function fetchElections(token) {
+        try {
+            const response = await fetch('/admin/api/get_elections', {
+                method: 'GET',
+                headers: {
+                    'token': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.status === 401) {
+                logoutVoter();
+                return;
+            }
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                renderElections(result.data || []);
+            } else {
+                document.getElementById('activeLoading').innerText = "Failed to load elections.";
+                document.getElementById('pastLoading').innerText = "Failed to load past elections.";
+                console.error("Failed to load:", result.message);
+            }
+        } catch (error) {
+            console.error('Error fetching elections:', error);
+            document.getElementById('activeLoading').innerText = "Error connecting to server.";
+            document.getElementById('pastLoading').innerText = "Error connecting to server.";
+        }
+    }
+
+    // Render logic to split elections into Active/Upcoming and Completed
+    function renderElections(elections) {
+        const activeContainer = document.getElementById('activeElectionsContainer');
+        const pastContainer = document.getElementById('pastElectionsContainer');
+
+        activeContainer.innerHTML = '';
+        pastContainer.innerHTML = '';
+
+        let activeCount = 0;
+        let pastCount = 0;
+
+        elections.forEach(election => {
+            const status = election.status;
+
+            if (status === 'Live' || status === 'Upcoming') {
+                activeCount++;
+                const badgeClass = status === 'Live' ? '' : 'upcoming';
+                const btnHtml = status === 'Live'
+                    ? `<button class="btn-vote" onclick="startVotingProcess(${election.id})">Proceed to Vote</button>`
+                    : `<button class="btn-vote btn-disabled" disabled>Starts Soon</button>`;
+
+                activeContainer.innerHTML += `
+                    <div class="election-card">
+                        <div class="status-badge ${badgeClass}">${status.toUpperCase()}</div>
+                        <h3>${election.title}</h3>
+                        <div class="election-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Start Time:</span>
+                                <span>${formatDateTime(election.start_time)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">End Time:</span>
+                                <span>${formatDateTime(election.end_time)}</span>
+                            </div>
+                        </div>
+                        ${btnHtml}
+                    </div>
+                `;
+            } else if (status === 'Completed') {
+                pastCount++;
+                pastContainer.innerHTML += `
+                    <div class="election-card" style="opacity: 0.8;">
+                        <div class="status-badge completed">ENDED</div>
+                        <h3>${election.title}</h3>
+                        <div class="election-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Ended On:</span>
+                                <span>${formatDateTime(election.end_time)}</span>
+                            </div>
+                        </div>
+                        <button class="btn-vote" style="background-color: #3498db;" onclick="viewResults(${election.id})">View Results</button>
+                    </div>
+                `;
+            }
+        });
+
+        if (activeCount === 0) {
+            activeContainer.innerHTML = '<div class="empty-message">No active or upcoming elections at the moment.</div>';
+        }
+        if (pastCount === 0) {
+            pastContainer.innerHTML = '<div class="empty-message">No past elections available.</div>';
+        }
+    }
+
+    // 🚀 REDIRECTION LOGIC 🚀
     function startVotingProcess(electionId) {
-        // This is where you will redirect to the Face Verification page before showing the ballot
-        alert(`Initiating facial verification for Election ID: ${electionId}...`);
-        // window.location.href = `/voter/ui/verify_face?election_id=${electionId}`;
+        // Redirection with URL parameter
+        window.location.href = `/voter/ui/candidates_listing?election_id=${electionId}`;
     }
 
     function viewResults(electionId) {
@@ -261,12 +317,9 @@
     }
 
     function logoutVoter() {
-        // Clear all session data
         sessionStorage.removeItem('voter_token');
         sessionStorage.removeItem('voter_id');
         sessionStorage.removeItem('voter_username');
-        
-        // Redirect to homepage or login
         window.location.href = '/';
     }
 </script>

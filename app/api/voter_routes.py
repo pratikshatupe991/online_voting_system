@@ -3,7 +3,7 @@ import os
 from flask import Blueprint, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 import config
-from app.models import Voter
+from app.models import Voter, Election, Candidate, Vote
 from app.utils import admin_login_required, hash_password, verify_password, generate_jwt_token_voter
 from config import allowed_file
 
@@ -108,6 +108,47 @@ def get_participant_image(prn: str):
         if not os.path.exists(img_path):
             return jsonify({"status": "error", "message": "Image not found on server."}), 404
         return send_file(img_path)
+    except Exception as ex:
+        print(f"Fetch participant image error: {ex}")
+        return jsonify({"status": "error", "message": "Internal server error."}), 500
+
+
+@voter_bp.route('/voter/ui/candidates_listing', methods=['GET'])
+def candidates_listing_page():
+    return render_template('voter/candidates_listing.html')
+
+
+@voter_bp.route('/voter/api/cast_vote', methods=['POST'])
+def cast_vote():
+    try:
+        data = request.get_json()
+        if not data or not data.get('voter_id') or not data.get('election_id'):
+            return jsonify({"status": "error", "message": "Missing email or password."}), 400
+        if "candidate_id" not in data.keys():
+            return jsonify({"status": "error", "message": "Required parameter candidate id missing."}), 400
+        voter: Voter = Voter.get_by_id(data['voter_id'])
+        if not voter:
+            return jsonify({"status": "error", "message": "PRN is Not registered, Please Sign Up."}), 409
+
+        election: Election = Election.get_by_id(data['election_id'])
+        if not election:
+            return jsonify({"status": "error", "message": f"Election does not exist with id:"
+                                                          f" {data['election_id']}."}), 404
+
+        if not election.is_active():
+            return jsonify({"status": "error", "message": f"Election is not active election id: {election.id}."}), 404
+
+        if data['candidate_id']:
+            candidate = Candidate.get_by_candidate_election_id(data['candidate_id'], election.id)
+            if not candidate:
+                return jsonify({"status": "error", "message": f"Candidate does not exist with candidate id:"
+                                                              f" {data['candidate_id']}."}), 404
+
+        already_voted_candidate = Vote.get_by_voter_and_election(voter.id, election.id)
+        if already_voted_candidate:
+            return jsonify({"status": "error", "message": f"Voter has already casted vote."}), 404
+        Vote.add(voter.id, data['candidate_id'], election.id)
+        return jsonify({"status": "success", "message": "Vote Casted successful"}), 200
     except Exception as ex:
         print(f"Fetch participant image error: {ex}")
         return jsonify({"status": "error", "message": "Internal server error."}), 500

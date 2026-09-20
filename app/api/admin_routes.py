@@ -140,17 +140,11 @@ def elections_page():
 
 
 @admin_bp.route('/admin/api/get_elections', methods=['GET'])
-@admin_login_required
-def get_elections(admin_id: int):
+def get_elections():
     try:
-        admin = Admin.get_by_id(admin_id)
-        if not admin:
-            return jsonify({"status": "error", "message": "Authorization error. Invalid admin token."}), 400
         elections = Election.get_all()
-
         if elections is None:
             return jsonify({"status": "error", "message": "Failed to fetch elections."}), 404
-
         election_list = []
         now = datetime.datetime.now()
         for election in elections:
@@ -160,7 +154,6 @@ def get_elections(admin_id: int):
                 current_status = "Live"
             else:
                 current_status = "Completed"
-
             election_list.append({"id": election.id, "title": election.title,
                                   "start_time": election.start_ts.strftime('%Y-%m-%dT%H:%M'),
                                   "end_time": election.end_ts.strftime('%Y-%m-%dT%H:%M'), "status": current_status})
@@ -210,13 +203,8 @@ def add_candidate(admin_id: int):
 
 
 @admin_bp.route('/admin/api/get_candidates/<election_id>', methods=['GET'])
-@admin_login_required
-def get_candidates(admin_id: int, election_id: int):
+def get_candidates(election_id: int):
     try:
-        admin = Admin.get_by_id(admin_id)
-        if not admin:
-            return jsonify({"status": "error", "message": "Authorization error. Invalid admin token."}), 400
-
         existing_election = Election.get_by_id(election_id)
         if not existing_election:
             return jsonify({"status": "error", "message": f"Election does not exist with id: {election_id}."}), 404
@@ -226,7 +214,8 @@ def get_candidates(admin_id: int, election_id: int):
         for candidate in candidates:
             voter: Voter = Voter.get_by_prn(candidate.prn)
             voter_img_url = f"{config.BASE_URL}//voter/api/get_participant_image/{candidate.prn}"
-            res_data.append({"prn": candidate.prn, "name": voter.name, "voter_img_url": voter_img_url})
+            res_data.append({"prn": candidate.prn, "name": voter.name, "voter_img_url": voter_img_url,
+                             "id": candidate.id})
         return jsonify({"status": "success", "data": res_data}), 200
     except Exception as ex:
         print(f"Fetch elections error: {ex}")

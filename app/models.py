@@ -70,10 +70,16 @@ class Election(db.Model):
     def get_all():
         return Election.query.all()
 
+    def is_active(self) -> bool:
+        now = datetime.now()
+        if self.start_ts and self.end_ts:
+            return self.start_ts <= now <= self.end_ts
+        return False
+
 
 class Candidate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    prn = db.Column(db.String(20), unique=True, nullable=False)
+    prn = db.Column(db.String(20), nullable=False)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
 
     votes = db.relationship('Vote', backref='candidate', lazy=True)
@@ -92,6 +98,10 @@ class Candidate(db.Model):
     @staticmethod
     def get_by_prn_and_election_id(prn: str, election_id: int):
         return Candidate.query.filter_by(prn=prn, election_id=election_id).first()
+
+    @staticmethod
+    def get_by_candidate_election_id(candidate_id: int, election_id: int):
+        return Candidate.query.filter_by(id=candidate_id, election_id=election_id).first()
 
     @staticmethod
     def get_by_election(election_id: int):
@@ -119,6 +129,10 @@ class Voter(db.Model):
         return Voter.query.filter_by(prn=prn).first()
 
     @staticmethod
+    def get_by_id(id):
+        return Voter.query.filter_by(id=id).first()
+
+    @staticmethod
     def add(prn, name, email, password_hash, image_path):
         voter = Voter(prn, name, email, password_hash, image_path)
         db.session.add(voter)
@@ -139,7 +153,7 @@ class Voter(db.Model):
 class Vote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     voter_id = db.Column(db.Integer, db.ForeignKey('voter.id'), unique=True, nullable=False)
-    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'), nullable=False)
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'), nullable=True)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
     timestamp = db.Column(db.DateTime)
 
@@ -148,3 +162,14 @@ class Vote(db.Model):
         self.candidate_id = candidate_id
         self.election_id = election_id
         self.timestamp = timestamp or datetime.now(timezone.utc)
+
+    @staticmethod
+    def get_by_voter_and_election(voter_id: int, election_id: int):
+        return Vote.query.filter_by(voter_id=voter_id, election_id=election_id).first()
+
+    @staticmethod
+    def add(voter_id, candidate_id, election_id):
+        vote = Vote(voter_id=voter_id, election_id=election_id, candidate_id=candidate_id)
+        db.session.add(vote)
+        db.session.commit()
+        return Vote
