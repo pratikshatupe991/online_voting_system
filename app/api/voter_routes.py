@@ -48,7 +48,7 @@ def voter_sign_up():
 
         filename = secure_filename(f"{prn}_{file.filename}")
         os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)  # Creates the folder if it doesn't exist
-        save_path = os.path.join(config.UPLOAD_FOLDER, filename)
+        save_path = os.path.join(config.UPLOAD_FOLDER, "voters", filename)
         file.save(save_path)
 
         db_image_path = f"/static/uploads/voters/{filename}"
@@ -80,6 +80,8 @@ def voter_login():
             return jsonify({"status": "error", "message": "Invalid password."}), 401
         reg_voter_img: str = os.path.basename(voter.image_path)
         save_path = os.path.join(config.UPLOAD_FOLDER, "voters", reg_voter_img)
+        if not os.path.exists(save_path):
+            return jsonify({"status": "error", "message": "Voter image not found."}), 409
         img_verify = verify_user_face(save_path, data.get("image_base64"))
         if not img_verify:
             return jsonify({"status": "error", "message": "Voter image did not match with registered Image."}), 409
