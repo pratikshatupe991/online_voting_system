@@ -6,6 +6,8 @@ import urllib.request
 import ssl
 import cv2
 from deepface import DeepFace
+import base64
+import numpy as np
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -44,7 +46,7 @@ if not os.path.exists(facenet_path):
         sys.exit()
 
 
-def verify_user_face(registered_face_path, live_face_path):
+def verify_user_face_old(registered_face_path, live_face_path):
     img1 = cv2.imread(registered_face_path)
     img2 = cv2.imread(live_face_path)
 
@@ -63,3 +65,34 @@ def verify_user_face(registered_face_path, live_face_path):
             return {"status": False, "message": "Access Denied. Face did not match."}
     except Exception as e:
         return {"status": False, "message": f"Verification Error: {str(e)}"}
+
+
+def verify_user_face(registered_face_path, live_face_base64):
+    try:
+        if "," in live_face_base64:
+            live_face_base64 = live_face_base64.split(",")[1]
+
+        img_data = base64.b64decode(live_face_base64)
+        nparr = np.frombuffer(img_data, np.uint8)
+        live_face_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if live_face_img is None:
+            return {"status": False, "message": "Invalid Base64 Image provided."}
+
+        result = DeepFace.verify(
+            img1_path=registered_face_path,
+            img2_path=live_face_img,
+            model_name="Facenet",
+            detector_backend="mtcnn",
+            distance_metric="euclidean_l2",
+            enforce_detection=False,
+            threshold=1.17
+        )
+
+        if result.get("verified") or (result.get('distance') < 1.17):
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(e)
+        return False

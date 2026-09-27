@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+
 <style>
     .form-card {
         background-color: #ffffff;
-        max-width: 400px;
+        max-width: 450px;
         margin: 60px auto;
         padding: 30px;
         border-radius: 8px;
@@ -59,6 +61,7 @@
         font-weight: bold;
         cursor: pointer;
         transition: background-color 0.3s;
+        margin-top: 10px;
     }
     .btn-submit:hover {
         background-color: #2980b9;
@@ -67,6 +70,86 @@
         background-color: #bdc3c7;
         cursor: not-allowed;
     }
+
+    .camera-section {
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .video-container {
+        position: relative;
+        width: 100%;
+        max-width: 320px;
+        margin: 0 auto 15px auto;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #000;
+        display: none;
+    }
+    #cameraStream {
+        width: 100%;
+        display: block;
+        transform: scaleX(-1);
+    }
+    .face-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        width: 180px;
+        height: 240px;
+        margin: auto;
+        border: 2px dashed #2ecc71;
+        pointer-events: none;
+        box-sizing: border-box;
+        transition: border-color 0.3s;
+    }
+    #capturedImagePreview {
+        width: 100%;
+        max-width: 320px;
+        border-radius: 8px;
+        border: 2px solid #3498db;
+        display: none;
+        margin: 0 auto 15px auto;
+        transform: scaleX(-1);
+    }
+    .btn-camera {
+        background-color: #ecf0f1;
+        color: #2c3e50;
+        border: 1px solid #bdc3c7;
+        padding: 8px 15px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-camera:hover { background-color: #e0e6ed; }
+    .btn-camera:disabled { background-color: #e0e0e0; cursor: not-allowed; color: #999; }
+
+    .btn-capture {
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        display: none;
+        transition: background-color 0.3s;
+    }
+    .btn-capture:hover { background-color: #27ae60; }
+    .btn-capture:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+    #faceDetectionMsg {
+        font-size: 13px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        display: none;
+        padding: 8px;
+        border-radius: 4px;
+    }
+
     .alert {
         padding: 12px;
         border-radius: 4px;
@@ -94,12 +177,71 @@
     .form-footer a {
         color: #3498db;
         text-decoration: none;
-        font-weight: normal; /* Changed from bold to normal */
     }
     .form-footer a:hover {
         text-decoration: underline;
     }
+
+    .loading-overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.95);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        flex-direction: column;
+        perspective: 1000px;
+    }
+    .interactive-scanner {
+        width: 180px;
+        height: 180px;
+        border: 2px solid #3498db;
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 0 30px rgba(52, 152, 219, 0.4), inset 0 0 20px rgba(52, 152, 219, 0.2);
+        transition: transform 0.1s ease-out;
+        transform-style: preserve-3d;
+        background: repeating-linear-gradient(0deg, rgba(52, 152, 219, 0.05) 0px, rgba(52, 152, 219, 0.05) 1px, transparent 1px, transparent 10px);
+    }
+    .scanner-laser {
+        width: 100%;
+        height: 3px;
+        background: #2ecc71;
+        box-shadow: 0 0 15px #2ecc71, 0 0 30px #2ecc71;
+        position: absolute;
+        top: 0;
+        left: 0;
+        animation: scanAnim 1.5s ease-in-out infinite alternate;
+    }
+    @keyframes scanAnim {
+        0% { top: 0%; opacity: 0; }
+        10% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { top: calc(100% - 3px); opacity: 0; }
+    }
+    .dynamic-text-container {
+        margin-top: 30px;
+        height: 30px;
+    }
+    .dynamic-loading-text {
+        font-size: 16px;
+        font-family: monospace;
+        color: #2ecc71;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
 </style>
+
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="interactive-scanner" id="scannerBox">
+        <div class="scanner-laser"></div>
+    </div>
+    <div class="dynamic-text-container">
+        <div id="dynamicLoadingText" class="dynamic-loading-text">Initializing Secure Protocol...</div>
+    </div>
+</div>
 
 <div class="form-card">
     <div class="form-header">
@@ -107,10 +249,8 @@
         <p>Access your JNEC voting portal</p>
     </div>
 
-    <!-- Alert Box for Responses -->
     <div id="apiMessage" class="alert"></div>
 
-    <!-- Voter Login Form -->
     <form id="voterLoginForm">
         <div class="form-group">
             <label for="prn">PRN</label>
@@ -122,6 +262,26 @@
             <input type="password" id="password" name="password" required placeholder="Enter your password">
         </div>
 
+        <div class="camera-section">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #555; font-size: 14px; text-align: left;">Liveness Verification</label>
+
+            <div id="faceDetectionMsg">Initializing AI Models...</div>
+
+            <div class="video-container" id="videoContainer">
+                <video id="cameraStream" autoplay playsinline></video>
+                <div class="face-overlay" id="faceOverlay"></div>
+            </div>
+
+            <img id="capturedImagePreview" alt="Captured Face" />
+
+            <div>
+                <button type="button" class="btn-camera" id="startCameraBtn" disabled>Loading AI...</button>
+                <button type="button" class="btn-capture" id="captureBtn" disabled>Capture Face</button>
+                <button type="button" class="btn-camera" id="retakeBtn" style="display: none;">Retake Photo</button>
+            </div>
+            <canvas id="snapshotCanvas" style="display: none;"></canvas>
+        </div>
+
         <button type="submit" class="btn-submit" id="submitBtn">Login</button>
     </form>
 
@@ -131,27 +291,216 @@
 </div>
 
 <script>
+    const video = document.getElementById('cameraStream');
+    const videoContainer = document.getElementById('videoContainer');
+    const faceOverlay = document.getElementById('faceOverlay');
+    const canvas = document.getElementById('snapshotCanvas');
+    const preview = document.getElementById('capturedImagePreview');
+    const detectionMsg = document.getElementById('faceDetectionMsg');
+
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const scannerBox = document.getElementById('scannerBox');
+    const dynamicLoadingText = document.getElementById('dynamicLoadingText');
+
+    const startCameraBtn = document.getElementById('startCameraBtn');
+    const captureBtn = document.getElementById('captureBtn');
+    const retakeBtn = document.getElementById('retakeBtn');
+
+    let stream = null;
+    let base64Image = null;
+    let detectionInterval = null;
+    let livenessStage = 0;
+
+    let phraseInterval;
+    const loadingPhrases = [
+        "Analyzing Facial Landmarks...",
+        "Running DeepFace Verification...",
+        "Cross-checking Voter Database...",
+        "Verifying Liveness Protocols...",
+        "Establishing Secure Connection..."
+    ];
+
+    async function loadModels() {
+        try {
+            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+
+            startCameraBtn.innerText = "Start Camera";
+            startCameraBtn.disabled = false;
+            detectionMsg.style.display = "none";
+        } catch (error) {
+            detectionMsg.innerText = "Failed to load AI models. Please refresh.";
+            detectionMsg.style.color = "#e74c3c";
+            detectionMsg.style.display = "block";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadModels);
+
+    loadingOverlay.addEventListener('mousemove', (e) => {
+        const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+        const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+        scannerBox.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+    });
+
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+            video.srcObject = stream;
+            videoContainer.style.display = 'block';
+            preview.style.display = 'none';
+            detectionMsg.style.display = 'block';
+
+            startCameraBtn.style.display = 'none';
+            captureBtn.style.display = 'inline-block';
+            captureBtn.disabled = true;
+            retakeBtn.style.display = 'none';
+
+            base64Image = null;
+            livenessStage = 0;
+
+        } catch (err) {
+            alert("Camera access denied.");
+        }
+    }
+
+    video.addEventListener('play', () => {
+        detectionInterval = setInterval(async () => {
+            if (video.paused || video.ended) return;
+
+            const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+
+            if (detections.length === 1) {
+                const landmarks = detections[0].landmarks;
+                const leftJaw = landmarks.positions[0];
+                const rightJaw = landmarks.positions[16];
+                const nose = landmarks.positions[30];
+
+                const distLeft = Math.hypot(nose.x - leftJaw.x, nose.y - leftJaw.y);
+                const distRight = Math.hypot(nose.x - rightJaw.x, nose.y - rightJaw.y);
+                const yawRatio = distLeft / distRight;
+
+                if (livenessStage === 0) {
+                    if (yawRatio > 0.8 && yawRatio < 1.2) {
+                        livenessStage = 1;
+                    } else {
+                        captureBtn.disabled = true;
+                        faceOverlay.style.borderColor = "#f39c12";
+                        detectionMsg.innerText = "Please look STRAIGHT at the camera to start.";
+                        detectionMsg.style.color = "#d35400";
+                        detectionMsg.style.backgroundColor = "#fdebd0";
+                    }
+                } else if (livenessStage === 1) {
+                    if (yawRatio < 0.55 || yawRatio > 1.8) {
+                        livenessStage = 2;
+                    } else {
+                        captureBtn.disabled = true;
+                        faceOverlay.style.borderColor = "#f39c12";
+                        detectionMsg.innerText = "Face Detected. Please TURN your head slightly left or right.";
+                        detectionMsg.style.color = "#d35400";
+                        detectionMsg.style.backgroundColor = "#fdebd0";
+                    }
+                } else if (livenessStage === 2) {
+                    if (yawRatio > 0.8 && yawRatio < 1.2) {
+                        captureBtn.disabled = false;
+                        faceOverlay.style.borderColor = "#2ecc71";
+                        detectionMsg.innerText = "Liveness Verified! Look STRAIGHT to capture.";
+                        detectionMsg.style.color = "#2ecc71";
+                        detectionMsg.style.backgroundColor = "#eafaf1";
+                    } else {
+                        captureBtn.disabled = true;
+                        faceOverlay.style.borderColor = "#f39c12";
+                        detectionMsg.innerText = "Liveness Verified! Now look STRAIGHT again.";
+                        detectionMsg.style.color = "#d35400";
+                        detectionMsg.style.backgroundColor = "#fdebd0";
+                    }
+                }
+
+            } else if (detections.length > 1) {
+                captureBtn.disabled = true;
+                livenessStage = 0;
+                faceOverlay.style.borderColor = "#e74c3c";
+                detectionMsg.innerText = "Multiple faces detected! Liveness reset.";
+                detectionMsg.style.color = "#e74c3c";
+                detectionMsg.style.backgroundColor = "#fdecea";
+            } else {
+                captureBtn.disabled = true;
+                livenessStage = 0;
+                faceOverlay.style.borderColor = "#e74c3c";
+                detectionMsg.innerText = "No face detected. Liveness reset.";
+                detectionMsg.style.color = "#e74c3c";
+                detectionMsg.style.backgroundColor = "#fdecea";
+            }
+        }, 100);
+    });
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        if (detectionInterval) {
+            clearInterval(detectionInterval);
+        }
+        detectionMsg.style.display = 'none';
+    }
+
+    startCameraBtn.addEventListener('click', startCamera);
+
+    captureBtn.addEventListener('click', () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        base64Image = dataUrl.split(',')[1];
+
+        preview.src = dataUrl;
+        preview.style.display = 'block';
+        videoContainer.style.display = 'none';
+
+        captureBtn.style.display = 'none';
+        retakeBtn.style.display = 'inline-block';
+
+        stopCamera();
+    });
+
+    retakeBtn.addEventListener('click', startCamera);
+
     document.getElementById('voterLoginForm').addEventListener('submit', async function(event) {
         event.preventDefault();
 
         const submitBtn = document.getElementById('submitBtn');
         const messageBox = document.getElementById('apiMessage');
-        let response;
 
-        submitBtn.innerText = "Authenticating...";
+        if (!base64Image) {
+            messageBox.style.display = 'block';
+            messageBox.className = 'alert alert-error';
+            messageBox.innerText = "Please capture your face after liveness verification.";
+            return;
+        }
+
+        loadingOverlay.style.display = 'flex';
         submitBtn.disabled = true;
+
+        let phraseIndex = 0;
+        dynamicLoadingText.innerText = loadingPhrases[phraseIndex];
+        phraseInterval = setInterval(() => {
+            phraseIndex = (phraseIndex + 1) % loadingPhrases.length;
+            dynamicLoadingText.innerText = loadingPhrases[phraseIndex];
+        }, 1200);
 
         const payload = {
             prn: document.getElementById('prn').value.trim(),
-            password: document.getElementById('password').value
+            password: document.getElementById('password').value,
+            image_base64: base64Image
         };
 
         try {
-            response = await fetch('/voter/api/login', {
+            const response = await fetch('/voter/api/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
@@ -162,30 +511,26 @@
                 messageBox.className = 'alert alert-success';
                 messageBox.innerText = data.message;
 
-                // Save the token, voter_id, and username to sessionStorage
                 sessionStorage.setItem('voter_token', data.data.token);
                 sessionStorage.setItem('voter_id', data.data.voter_id);
                 sessionStorage.setItem('voter_username', data.data.username);
 
-                // Redirect to the voter dashboard after a short delay
                 setTimeout(() => {
-                    window.location.href = '/voter/ui/dashboard'; // Update if your dashboard route is different
+                    window.location.href = '/voter/ui/dashboard';
                 }, 1000);
             } else {
                 messageBox.className = 'alert alert-error';
                 messageBox.innerText = data.message || 'Login failed.';
             }
-
         } catch (error) {
-            console.error("API Error:", error);
             messageBox.style.display = 'block';
             messageBox.className = 'alert alert-error';
-            messageBox.innerText = "A network error occurred. Please check your connection.";
+            messageBox.innerText = "A network error occurred.";
         } finally {
-            if (!response?.ok) {
-                submitBtn.innerText = "Login";
-                submitBtn.disabled = false;
-            }
+            clearInterval(phraseInterval);
+            loadingOverlay.style.display = 'none';
+            scannerBox.style.transform = 'rotateY(0deg) rotateX(0deg)';
+            submitBtn.disabled = false;
         }
     });
 </script>

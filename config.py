@@ -3,7 +3,7 @@ import json
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SECRET_FILE = os.path.join(BASE_DIR, 'secret.json')
-UPLOAD_FOLDER = os.path.join('static')
+UPLOAD_FOLDER: str = os.path.join('static', "uploads")
 IMG_ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 BASE_URL = "http://127.0.0.1:5000"
 

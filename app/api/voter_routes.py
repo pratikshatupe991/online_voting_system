@@ -3,6 +3,7 @@ import os
 from flask import Blueprint, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 import config
+from app.ai import verify_user_face
 from app.models import Voter, Election, Candidate, Vote
 from app.utils import admin_login_required, hash_password, verify_password, generate_jwt_token_voter
 from config import allowed_file
@@ -69,14 +70,19 @@ def voter_signup_page():
 def voter_login():
     try:
         data = request.get_json()
-        if not data or not data.get('prn') or not data.get('password'):
-            return jsonify({"status": "error", "message": "Missing email or password."}), 400
+        if not data or not data.get('prn') or not data.get('password') or not data.get("image_base64"):
+            return jsonify({"status": "error", "message": "Missing email or password or voter image."}), 400
         voter: Voter = Voter.get_by_prn(data['prn'])
         if not voter:
             return jsonify({"status": "error", "message": "PRN is Not registered, Please Sign Up."}), 409
 
         if not verify_password(voter.password_hash, data['password']):
             return jsonify({"status": "error", "message": "Invalid password."}), 401
+        reg_voter_img: str = os.path.basename(voter.image_path)
+        save_path = os.path.join(config.UPLOAD_FOLDER, "voters", reg_voter_img)
+        img_verify = verify_user_face(save_path, data.get("image_base64"))
+        if not img_verify:
+            return jsonify({"status": "error", "message": "Voter image did not match with registered Image."}), 409
         token = generate_jwt_token_voter(voter.id, voter.prn)
         return jsonify({"status": "success", "message": "Login successful", "data": {"voter_id": voter.id,
                         "username": voter.name, "token": token}}), 200
