@@ -152,7 +152,7 @@ class Voter(db.Model):
 
 class Vote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    voter_id = db.Column(db.Integer, db.ForeignKey('voter.id'), unique=True, nullable=False)
+    voter_id = db.Column(db.Integer, db.ForeignKey('voter.id'), nullable=True)
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'), nullable=True)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
     timestamp = db.Column(db.DateTime)
