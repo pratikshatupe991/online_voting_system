@@ -4,16 +4,17 @@ import logging
 import warnings
 import urllib.request
 import ssl
-import cv2
-from deepface import DeepFace
 import base64
-import numpy as np
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 warnings.filterwarnings("ignore")
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
 logging.getLogger('absl').setLevel(logging.FATAL)
+
+import numpy as np
+import cv2
+from deepface import DeepFace
 
 
 def silent_unraisable_hook(unraisable):
