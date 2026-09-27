@@ -67,6 +67,9 @@ def verify_user_face_old(registered_face_path, live_face_path):
         return {"status": False, "message": f"Verification Error: {str(e)}"}
 
 
+DeepFace.build_model("Facenet")
+
+
 def verify_user_face(registered_face_path, live_face_base64):
     try:
         if "," in live_face_base64:
@@ -79,6 +82,13 @@ def verify_user_face(registered_face_path, live_face_base64):
         if live_face_img is None:
             return {"status": False, "message": "Invalid Base64 Image provided."}
 
+        height, width = live_face_img.shape[:2]
+        max_width = 400
+        if width > max_width:
+            ratio = max_width / float(width)
+            new_dimensions = (max_width, int(height * ratio))
+            live_face_img = cv2.resize(live_face_img, new_dimensions, interpolation=cv2.INTER_AREA)
+
         result = DeepFace.verify(
             img1_path=registered_face_path,
             img2_path=live_face_img,
@@ -89,7 +99,7 @@ def verify_user_face(registered_face_path, live_face_base64):
             threshold=1.17
         )
 
-        if result.get("verified") or (result.get('distance') < 1.17):
+        if result.get("verified") or (result.get('distance', 99) < 1.17):
             return True
         else:
             return False
