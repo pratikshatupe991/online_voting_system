@@ -4,9 +4,14 @@ import json
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SECRET_FILE = os.path.join(BASE_DIR, 'secret.json')
 UPLOAD_FOLDER: str = os.path.join('static', "uploads")
+VOTER_UPLOAD_FOLDER: str = os.path.join('static', "uploads", "voters")
+ADMIN_UPLOAD_FOLDER: str = os.path.join('static', "uploads", "admin")
 IMG_ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 BASE_URL = "http://127.0.0.1:5000"
 
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(VOTER_UPLOAD_FOLDER, exist_ok=True) 
+os.makedirs(ADMIN_UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in IMG_ALLOWED_EXTENSIONS
