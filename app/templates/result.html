@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .page-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 0 20px;
+        font-family: Arial, sans-serif;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+    }
+    
+    .page-header p {
+        color: #777;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+    
+    .search-group {
+        margin-bottom: 30px;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .search-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    .search-group input:focus {
+        border-color: #3498db;
+        outline: none;
+    }
+    
+    .election-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+    
+    .form-card {
+        background-color: #ffffff;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-top: 5px solid #3498db;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .election-title {
+        color: #2c3e50;
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+    
+    .election-detail {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .election-detail strong {
+        color: #555;
+    }
+    
+    .badge {
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        display: inline-block;
+        margin-bottom: 15px;
+        text-align: center;
+        width: fit-content;
+    }
+    
+    .badge-active {
+        background-color: #eafaf1;
+        color: #2ecc71;
+        border: 1px solid #d5f5e3;
+    }
+    
+    .badge-upcoming {
+        background-color: #fef9e7;
+        color: #f39c12;
+        border: 1px solid #f9e79f;
+    }
+
+    .badge-completed {
+        background-color: #ecf0f1;
+        color: #7f8c8d;
+        border: 1px solid #bdc3c7;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        margin-top: 15px;
+        text-align: center;
+        text-decoration: none;
+        box-sizing: border-box;
+        display: block;
+    }
+
+    .btn-submit:hover {
+        background-color: #2980b9;
+    }
+
+    .alert-box {
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        text-align: center;
+        display: none;
+        grid-column: 1 / -1;
+    }
+
+    .alert-error {
+        background-color: #fdecea;
+        color: #e74c3c;
+        border: 1px solid #fad2cf;
+    }
+</style>
+
+<div class="page-container">
+    <div class="page-header">
+        <h3>Election Results & Analytics</h3>
+        <p>Public portal to view election outcomes</p>
+    </div>
+
+    <div class="search-group">
+        <input type="text" id="searchInput" placeholder="Search by election name...">
+    </div>
+
+    <div id="apiMessage" class="alert-box alert-error"></div>
+
+    <div class="election-grid" id="electionGrid"></div>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const electionGrid = document.getElementById('electionGrid');
+    const messageBox = document.getElementById('apiMessage');
+
+    let electionsData = [];
+
+    async function fetchElections() {
+        try {
+            const response = await fetch('/admin/api/get_elections');
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                electionsData = data.data;
+                renderElections(electionsData);
+            } else {
+                showError(data.message || 'Failed to load elections.');
+            }
+        } catch (error) {
+            showError('A network error occurred while fetching elections.');
+        }
+    }
+
+    function showError(msg) {
+        messageBox.style.display = 'block';
+        messageBox.innerText = msg;
+    }
+
+    function renderElections(dataList) {
+        electionGrid.innerHTML = '';
+        messageBox.style.display = 'none';
+
+        if (dataList.length === 0) {
+            showError('No elections found matching your search.');
+            return;
+        }
+
+        dataList.forEach(election => {
+            const card = document.createElement('div');
+            card.className = 'form-card';
+
+            let badgeClass = 'badge-completed';
+            const statusText = election.status ? election.status : 'Completed';
+
+            if (statusText.toLowerCase() === 'live') {
+                badgeClass = 'badge-active';
+            } else if (statusText.toLowerCase() === 'upcoming') {
+                badgeClass = 'badge-upcoming';
+            } else {
+                badgeClass = 'badge-completed';
+            }
+
+            const startTimeStr = election.start_time ? new Date(election.start_time).toLocaleString() : 'N/A';
+            const endTimeStr = election.end_time ? new Date(election.end_time).toLocaleString() : 'N/A';
+
+            card.innerHTML = `
+                <div class="badge ${badgeClass}">${statusText}</div>
+                <div class="election-title">${election.title}</div>
+
+                <div class="election-detail">
+                    <strong>Start Time</strong>
+                    <span>${startTimeStr}</span>
+                </div>
+
+                <div class="election-detail">
+                    <strong>End Time</strong>
+                    <span>${endTimeStr}</span>
+                </div>
+                
+                <a href="/public/election_result/${election.id}" class="btn-submit">View Analytics</a>
+            `;
+            
+            electionGrid.appendChild(card);
+        });
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            renderElections(electionsData);
+            return;
+        }
+        
+        const filtered = electionsData.filter(election => {
+            return (election.title && election.title.toLowerCase().includes(searchTerm));
+        });
+        
+        renderElections(filtered);
+    });
+
+    document.addEventListener('DOMContentLoaded', fetchElections);
+</script>
+{% endblock %}

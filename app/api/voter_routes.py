@@ -160,3 +160,36 @@ def cast_vote():
     except Exception as ex:
         print(f"Fetch participant image error: {ex}")
         return jsonify({"status": "error", "message": "Internal server error."}), 500
+
+
+@voter_bp.route('/public/results', methods=['GET'])
+def public_result_page():
+    return render_template('result.html')
+
+
+@voter_bp.route('/public/election_result/<int:election_id>', methods=['GET'])
+def public_election_result_page(election_id):
+    return render_template('election_result.html', election_id=election_id)
+
+
+@voter_bp.route('/public/api/election/<int:election_id>/results', methods=['GET'])
+def election_result(election_id: int):
+    try:
+        election: Election = Election.get_by_id(election_id)
+        if not election:
+            return jsonify({"status": "error", "message": f"Election does not exist with id: {election_id}."}), 404.
+        total_votes = 0
+        candidates_data = []
+        candidates: list[Candidate] = Candidate.get_by_election(election_id)
+        c: Candidate
+        for c in candidates:
+            votes: list[Vote] = Vote.get_by_election_candidate_id(election.id, c.id)
+            voter: Voter = Voter.get_by_prn(c.prn)
+            total_votes += len(votes)
+            candidates_data.append({"id": c.id, "name": voter.name, "votes": len(votes)})
+        data = {"title": election.title, "start_time": election.start_ts, "end_time": election.end_ts,
+                "total_votes": total_votes, "candidates": candidates_data}
+        return jsonify({"data": data,"status": "success", "message": "Vote Casted successful"}), 200
+    except Exception as ex:
+        print(f"Fetch participant image error: {ex}")
+        return jsonify({"status": "error", "message": "Internal server error."}), 500

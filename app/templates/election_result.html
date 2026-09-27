@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .page-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+        font-family: Arial, sans-serif;
+    }
+    
+    .page-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .page-header h3 {
+        margin: 0;
+        color: #2c3e50;
+        font-size: 24px;
+    }
+    
+    .page-header p {
+        color: #777;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+    
+    .stats-summary {
+        display: flex;
+        justify-content: space-around;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+        border-top: 4px solid #3498db;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-item h4 {
+        margin: 0;
+        font-size: 22px;
+        color: #2c3e50;
+    }
+    
+    .stat-item span {
+        font-size: 13px;
+        color: #7f8c8d;
+    }
+    
+    .candidates-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .candidate-card {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border-left: 5px solid #3498db;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .candidate-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .candidate-name {
+        font-size: 18px;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+    
+    .vote-count {
+        font-size: 16px;
+        font-weight: bold;
+        color: #3498db;
+    }
+    
+    .progress-bar-container {
+        width: 100%;
+        background-color: #ecf0f1;
+        border-radius: 4px;
+        height: 12px;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background-color: #2ecc71;
+        width: 0%;
+        transition: width 0.6s ease;
+    }
+    
+    .percentage-text {
+        font-size: 12px;
+        color: #7f8c8d;
+        text-align: right;
+    }
+    
+    .alert-box {
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        text-align: center;
+        display: none;
+    }
+    
+    .alert-error {
+        background-color: #fdecea;
+        color: #e74c3c;
+        border: 1px solid #fad2cf;
+    }
+    
+    .btn-back {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #3498db;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+    .btn-back:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="page-container">
+    <a href="/results/ui" class="btn-back">&larr; Back to Elections</a>
+    
+    <div class="page-header">
+        <h3 id="electionTitle">Loading Election Analytics...</h3>
+        <p id="electionStatus">Fetching live stats</p>
+    </div>
+
+    <div id="apiMessage" class="alert-box alert-error"></div>
+
+    <div class="stats-summary" id="statsSummary" style="display: none;">
+        <div class="stat-item">
+            <h4 id="totalVotesVal">0</h4>
+            <span>Total Votes Cast</span>
+        </div>
+        <div class="stat-item">
+            <h4 id="totalCandidatesVal">0</h4>
+            <span>Total Candidates</span>
+        </div>
+    </div>
+
+    <div class="candidates-list" id="candidatesList"></div>
+</div>
+
+<script>
+    const pathParts = window.location.pathname.split('/');
+    const electionId = pathParts[pathParts.length - 1];
+
+    const electionTitle = document.getElementById('electionTitle');
+    const electionStatus = document.getElementById('electionStatus');
+    const messageBox = document.getElementById('apiMessage');
+    const statsSummary = document.getElementById('statsSummary');
+    const totalVotesVal = document.getElementById('totalVotesVal');
+    const totalCandidatesVal = document.getElementById('totalCandidatesVal');
+    const candidatesList = document.getElementById('candidatesList');
+
+    async function fetchElectionResults() {
+        try {
+            const response = await fetch(`/public/api/election/${electionId}/results`);
+            const data = await response.json();
+            
+            if (response.ok && data.status === 'success') {
+                const election = data.data;
+                
+                electionTitle.innerText = election.title;
+                electionStatus.innerText = `Status: ${election.status || 'Active'} | Period: ${election.start_time || 'N/A'} to ${election.end_time || 'N/A'}`;
+                
+                totalVotesVal.innerText = election.total_votes || 0;
+                totalCandidatesVal.innerText = election.candidates ? election.candidates.length : 0;
+                statsSummary.style.display = 'flex';
+                
+                renderCandidates(election.candidates, election.total_votes || 0);
+            } else {
+                showError(data.message || 'Failed to load election results.');
+            }
+        } catch (error) {
+            showError('A network error occurred while fetching results.');
+        }
+    }
+
+    function showError(msg) {
+        messageBox.style.display = 'block';
+        messageBox.innerText = msg;
+    }
+
+    function renderCandidates(candidates, totalVotes) {
+        candidatesList.innerHTML = '';
+        
+        if (!candidates || candidates.length === 0) {
+            showError('No candidates found for this election.');
+            return;
+        }
+        
+        candidates.forEach(candidate => {
+            const votes = candidate.votes || 0;
+            const percentage = totalVotes > 0 ? ((votes / totalVotes) * 100).toFixed(1) : 0;
+            
+            const card = document.createElement('div');
+            card.className = 'candidate-card';
+            
+            card.innerHTML = `
+                <div class="candidate-info">
+                    <span class="candidate-name">${candidate.name}</span>
+                    <span class="vote-count">${votes} Votes</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: ${percentage}%;"></div>
+                </div>
+                <div class="percentage-text">${percentage}% of total votes</div>
+            `;
+            
+            candidatesList.appendChild(card);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchElectionResults);
+</script>
+{% endblock %}

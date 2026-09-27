@@ -173,3 +173,7 @@ class Vote(db.Model):
         db.session.add(vote)
         db.session.commit()
         return Vote
+
+    @staticmethod
+    def get_by_election_candidate_id(election_id: int, candidate_id: int):
+        return Vote.query.filter_by(election_id=election_id, candidate_id=candidate_id).all()
