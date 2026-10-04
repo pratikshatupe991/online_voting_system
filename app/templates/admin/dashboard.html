@@ -2,19 +2,16 @@
 
 {% block content %}
 <style>
-    /* 🔥 FULL SCREEN WIDTH OVERRIDE 🔥 */
     .container {
         max-width: 100% !important;
         padding: 0 40px !important;
     }
 
-    /* Layout & Containers */
     .dashboard-container {
         width: 100%;
         margin: 30px auto;
     }
 
-    /* Top Navigation/Header area */
     .dashboard-header {
         display: flex;
         justify-content: space-between;
@@ -37,7 +34,6 @@
         font-size: 14px;
     }
 
-    /* Buttons */
     .btn-logout {
         background-color: #fff;
         color: #e74c3c;
@@ -53,10 +49,9 @@
         color: white;
     }
 
-    /* Admin Modules Grid - Strictly 4 items in one line */
     .modules-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 25px;
         margin-bottom: 50px;
     }
@@ -105,7 +100,6 @@
 </style>
 
 <div class="dashboard-container">
-    <!-- Header Section -->
     <div class="dashboard-header">
         <div class="welcome-text">
             <h2>Welcome, <span id="adminUsername">Admin</span>!</h2>
@@ -117,10 +111,8 @@
         </div>
     </div>
 
-    <!-- Admin Modules Grid -->
     <div class="modules-grid">
 
-        <!-- Module 1: Election Management (Link Updated Here) -->
         <a href="/admin/ui/dashboard/elections" class="module-card">
             <svg class="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
@@ -129,25 +121,14 @@
             <p>Create new elections, set voting schedules, and manage ballot configurations.</p>
         </a>
 
-        <!-- Module 2: Candidate Management -->
         <a href="/admin/ui/dashboard/voters" class="module-card">
             <svg class="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
             </svg>
             <h3>Voter Management</h3>
-            <p>Approve nominations, manage candidate profiles, and review manifestos.</p>
+            <p>Manage registered voters, verify student identities, and review voter lists.</p>
         </a>
 
-        <!-- Module 3: Results -->
-        <a href="#" class="module-card">
-            <svg class="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-            </svg>
-            <h3>Results & Analytics</h3>
-            <p>View real-time turnout statistics, count tallies, and declare final winners.</p>
-        </a>
-
-        <!-- Module 4: Announcements and Notification -->
         <a href="#" class="module-card">
             <svg class="module-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
@@ -163,19 +144,16 @@
     document.addEventListener("DOMContentLoaded", async function() {
         const token = sessionStorage.getItem('login_token');
 
-        // If no token, redirect to admin login
         if (!token) {
             window.location.href = '/admin/ui/login';
             return;
         }
 
-        // Display saved username
         const username = sessionStorage.getItem('admin_username');
         if (username) {
             document.getElementById('adminUsername').innerText = username;
         }
 
-        // Exact original API integration fetching all voters
         try {
             const response = await fetch('/admin/api/get_voters', {
                 method: 'GET',
@@ -186,7 +164,6 @@
             });
 
             if (response.status === 401) {
-                // Invalid or expired token
                 sessionStorage.removeItem('login_token');
                 sessionStorage.removeItem('admin_username');
                 window.location.href = '/admin/ui/login';
@@ -195,7 +172,6 @@
 
             const result = await response.json();
             if (response.ok && result.status === 'success') {
-                // Optional: Show count in the UI so the API data is actually used
                 document.getElementById('voterCount').innerText = result.data.length || 0;
             } else {
                 document.getElementById('voterCount').innerText = "Failed to load";
