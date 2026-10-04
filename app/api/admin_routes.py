@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 import config
-from app.models import Admin, Election, Candidate
+from app.models import Admin, Election, Candidate, AnnouncementType, PriorityLevel, Announcement
 from flask import render_template
 from app.utils import generate_jwt_token_admin, admin_login_required, verify_password
 from app.models import Voter
@@ -221,3 +221,65 @@ def get_candidates(election_id: int):
         print(f"Fetch elections error: {ex}")
         return jsonify({"status": "error", "message": "Internal server error."}), 500
 
+
+@admin_bp.route('/admin/api/add_announcement', methods=['POST'])
+@admin_login_required
+def add_announcement(admin_id: int):
+    try:
+        admin = Admin.get_by_id(admin_id)
+        if not admin:
+            return jsonify({"status": "error", "message": "Authorization error. Invalid admin token."}), 400
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "Invalid request. No data provided."}), 400
+
+        name = data.get('name')
+        description = data.get('description')
+        election_id = data.get('election_id')
+        action_link = data.get('action_link')
+        announcement_type = data.get('announcement_type')
+        priority = data.get('priority')
+
+        if not all([name, description, announcement_type, priority]):
+            return jsonify({"status": "error", "message": "name, description, announcement_type, priority are"
+                                                          " required."}), 400
+        val_anno_type = [a.name for a in AnnouncementType]
+        if announcement_type not in val_anno_type:
+            return jsonify({"status": "error", "message": f"Announcement type is not valid it should be one of"
+                                                          f" {val_anno_type}."})
+
+        val_priority_type = [p.name for p in PriorityLevel]
+        if priority not in val_priority_type:
+            return jsonify({"status": "error", "message": f"Priority type is not valid it should be one of"
+                                                          f" {val_priority_type}."})
+        Announcement.add(name, description, AnnouncementType[announcement_type], PriorityLevel[priority], election_id,
+                         action_link)
+        return jsonify({"status": "success",  "message": "Announcement created successfully."}), 200
+    except Exception as ex:
+        print(f"Fetch voters error: {ex}")
+        return jsonify({"status": "error", "message": "Internal server error."}), 500
+
+
+@admin_bp.route('/admin/ui/dashboard/announcement', methods=['GET'])
+def announcement_page():
+    return render_template('admin/announcement.html')
+
+
+@admin_bp.route('/admin/api/delete_announcement/<anno_id>', methods=['DELETE'])
+@admin_login_required
+def delete_announcement(admin_id: int, anno_id: int):
+    try:
+        admin = Admin.get_by_id(admin_id)
+        if not admin:
+            return jsonify({"status": "error", "message": "Authorization error. Invalid admin token."}), 400
+
+        announcement: Announcement = Announcement.get_by_id(anno_id)
+        if not anno_id:
+            return jsonify({"status": "error", "message": "Announcement id is not valid."})
+
+        announcement.soft_delete()
+        return jsonify({"status": "success",  "message": "Announcement created successfully."}), 200
+    except Exception as ex:
+        print(f"Fetch voters error: {ex}")
+        return jsonify({"status": "error", "message": "Internal server error."}), 500

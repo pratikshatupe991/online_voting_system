@@ -2,6 +2,7 @@ import config
 from app import db
 from datetime import datetime, timezone
 from app.utils import hash_password
+import enum
 
 
 class Admin(db.Model):
@@ -177,3 +178,63 @@ class Vote(db.Model):
     @staticmethod
     def get_by_election_candidate_id(election_id: int, candidate_id: int):
         return Vote.query.filter_by(election_id=election_id, candidate_id=candidate_id).all()
+
+
+class AnnouncementType(enum.Enum):
+    RESULT = 'result'
+    PUBLIC = 'public'
+    ELECTION_START = 'election_start'
+    ELECTION_END = 'election_end'
+
+
+class PriorityLevel(enum.Enum):
+    INFO = 'info'
+    WARNING = 'warning'
+    URGENT = 'urgent'
+
+
+class Announcement(db.Model):
+    __tablename__ = 'announcement'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    ts = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    is_deleted = db.Column(db.Boolean, default=False)
+    anno_type = db.Column(db.String(50), nullable=False)
+    election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=True)
+    priority = db.Column(db.String(50), nullable=True)
+    action_link = db.Column(db.String(500), nullable=True)
+
+    def __init__(self, name: str, description: str, anno_type: AnnouncementType, priority: PriorityLevel,
+                 election_id=None, action_link=None, is_deleted=False):
+        self.name = name
+        self.description = description
+        self.anno_type = anno_type.name
+        self.election_id = election_id
+        self.priority = priority.name
+        self.action_link = action_link
+        self.is_deleted = is_deleted
+
+    @staticmethod
+    def add(name, description, anno_type: AnnouncementType, priority: PriorityLevel, election_id=None, action_link=None,
+            is_deleted=False):
+        anno = Announcement(name=name, description=description, anno_type=anno_type, priority=priority,
+                            election_id=election_id, action_link=action_link, is_deleted=is_deleted)
+        db.session.add(anno)
+        db.session.commit()
+        return anno
+
+    @staticmethod
+    def get_all():
+        return Announcement.query.filter_by(is_deleted=False).all()
+
+    @staticmethod
+    def get_by_id(anno_id: int):
+        return Announcement.query.filter_by(id=anno_id).first()
+
+    def soft_delete(self) -> bool:
+        self.is_deleted = True
+        db.session.add(self)
+        db.session.commit()
+        return True

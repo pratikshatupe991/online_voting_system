@@ -4,7 +4,7 @@ from flask import Blueprint, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
 import config
 from app.ai import verify_user_face
-from app.models import Voter, Election, Candidate, Vote
+from app.models import Voter, Election, Candidate, Vote, Announcement
 from app.utils import admin_login_required, hash_password, verify_password, generate_jwt_token_voter
 from config import allowed_file
 
@@ -192,4 +192,20 @@ def election_result(election_id: int):
         return jsonify({"data": data,"status": "success", "message": "Vote Casted successful"}), 200
     except Exception as ex:
         print(f"Fetch participant image error: {ex}")
+        return jsonify({"status": "error", "message": "Internal server error."}), 500
+
+
+@voter_bp.route('/public/api/get_announcement', methods=['GET'])
+def get_announcement():
+    try:
+        data = []
+        announcements: list[Announcement] = Announcement.get_all()
+        announcement: Announcement
+        for announcement in announcements:
+            anno_data = announcement.__dict__
+            del anno_data['_sa_instance_state']
+            data.append(anno_data)
+        return jsonify({"data": data, "status": "success",  "message": "Announcement Get successfully."}), 201
+    except Exception as ex:
+        print(f"Fetch voters error: {ex}")
         return jsonify({"status": "error", "message": "Internal server error."}), 500
